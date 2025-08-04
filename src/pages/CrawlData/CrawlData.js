@@ -12,9 +12,13 @@ const CrawlData = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: crawlData, isLoading } = useQuery({
+  const { data: crawlData, isLoading, error } = useQuery({
     queryKey: ['crawl-data', { search: searchTerm, status: statusFilter, type: typeFilter }],
     queryFn: () => dataAPI.getAll({ search: searchTerm, status: statusFilter, type: typeFilter }),
+    retry: 1,
+    onError: (error) => {
+      console.error('CrawlData API error:', error);
+    }
   });
 
   const translateMutation = useMutation({
@@ -69,7 +73,7 @@ const CrawlData = () => {
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredData = crawlData?.data || [];
+  const filteredData = Array.isArray(crawlData?.data) ? crawlData.data : [];
 
   return (
     <div className="space-y-6">
@@ -243,7 +247,16 @@ const CrawlData = () => {
           </div>
         )}
 
-        {filteredData.length === 0 && !isLoading && (
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+            <p className="text-xs text-gray-400 mt-2">
+              {error.message || 'Không thể kết nối đến server'}
+            </p>
+          </div>
+        )}
+
+        {filteredData.length === 0 && !isLoading && !error && (
           <div className="text-center py-8">
             <p className="text-gray-500">Không có dữ liệu nào</p>
           </div>

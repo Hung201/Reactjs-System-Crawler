@@ -14,9 +14,13 @@ const ActorUploads = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: actors, isLoading } = useQuery({
+  const { data: actors, isLoading, error } = useQuery({
     queryKey: ['actors', { search: searchTerm, status: statusFilter }],
     queryFn: () => actorsAPI.getAll({ search: searchTerm, status: statusFilter }),
+    retry: 1,
+    onError: (error) => {
+      console.error('Actors API error:', error);
+    }
   });
 
   const runActorMutation = useMutation({
@@ -67,7 +71,7 @@ const ActorUploads = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredActors = actors?.data || [];
+  const filteredActors = Array.isArray(actors?.data) ? actors.data : [];
 
   return (
     <div className="space-y-6">
@@ -96,7 +100,7 @@ const ActorUploads = () => {
               className="input-field pl-10"
             />
           </div>
-          
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -168,7 +172,7 @@ const ActorUploads = () => {
                     </td>
                     <td className="table-cell">
                       <span className="text-sm text-gray-500">
-                        {actor.lastRunAt 
+                        {actor.lastRunAt
                           ? new Date(actor.lastRunAt).toLocaleDateString('vi-VN')
                           : 'Chưa chạy'
                         }
@@ -211,7 +215,16 @@ const ActorUploads = () => {
           </div>
         )}
 
-        {filteredActors.length === 0 && !isLoading && (
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+            <p className="text-xs text-gray-400 mt-2">
+              {error.message || 'Không thể kết nối đến server'}
+            </p>
+          </div>
+        )}
+
+        {filteredActors.length === 0 && !isLoading && !error && (
           <div className="text-center py-8">
             <p className="text-gray-500">Không có actor nào</p>
           </div>

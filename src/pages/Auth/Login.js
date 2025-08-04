@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
@@ -7,9 +7,19 @@ import toast from 'react-hot-toast';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading } = useAuthStore();
+  const { login, isLoading, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Theo dõi khi đăng nhập thành công
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('isAuthenticated changed to true, redirecting...');
+      const from = location.state?.from?.pathname || '/dashboard';
+      // Force reload để đảm bảo state được update
+      window.location.href = from;
+    }
+  }, [isAuthenticated, location.state?.from?.pathname]);
 
   const {
     register,
@@ -18,12 +28,13 @@ const Login = () => {
   } = useForm();
 
   const onSubmit = async (data) => {
+    console.log('Đang đăng nhập với:', data.email);
     const result = await login(data.email, data.password);
-    
+    console.log('Kết quả đăng nhập:', result);
+
     if (result.success) {
       toast.success('Đăng nhập thành công!');
-      const from = location.state?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+      // useEffect sẽ handle redirect
     } else {
       toast.error(result.error || 'Đăng nhập thất bại');
     }
@@ -139,9 +150,13 @@ const Login = () => {
           <div className="text-center">
             <p className="text-sm text-gray-600">
               Chưa có tài khoản?{' '}
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
-                Liên hệ quản trị viên
-              </a>
+              <button
+                type="button"
+                onClick={() => window.location.href = '/register'}
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
+                Đăng ký ngay
+              </button>
             </p>
           </div>
         </form>

@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 
 // Tạo instance axios
 const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
     timeout: 10000,
 });
 
@@ -37,6 +37,8 @@ export const authAPI = {
     login: (email, password) => api.post('/auth/login', { email, password }),
     getProfile: () => api.get('/auth/profile'),
     register: (userData) => api.post('/auth/register', userData),
+    updateProfile: (userData) => api.put('/auth/profile', userData),
+    changePassword: (passwords) => api.put('/auth/change-password', passwords),
 };
 
 // Crawl Sources API
@@ -55,9 +57,9 @@ export const dataAPI = {
     getById: (id) => api.get(`/data/${id}`),
     update: (id, data) => api.put(`/data/${id}`, data),
     delete: (id) => api.delete(`/data/${id}`),
-    translate: (id) => api.post(`/data/${id}/translate`),
-    approve: (id) => api.post(`/data/${id}/approve`),
-    reject: (id) => api.post(`/data/${id}/reject`),
+    translate: (id) => api.put(`/data/${id}/translate`),
+    approve: (id) => api.put(`/data/${id}/approve`),
+    reject: (id) => api.put(`/data/${id}/reject`),
 };
 
 // Users API
@@ -85,6 +87,7 @@ export const logsAPI = {
     getAll: (params) => api.get('/logs', { params }),
     getById: (id) => api.get(`/logs/${id}`),
     getByActor: (actorId) => api.get(`/logs/actor/${actorId}`),
+    getStats: () => api.get('/logs/stats'),
 };
 
 // Dashboard API

@@ -11,27 +11,37 @@ import {
   Play
 } from 'lucide-react';
 import { dashboardAPI } from '../../services/api';
-import { mockDashboardData } from '../../mocks/data';
 import { DATA_STATUS, SOURCE_STATUS } from '../../utils/constants';
 import StatCard from './components/StatCard';
 import RecentDataTable from './components/RecentDataTable';
 import ChartSection from './components/ChartSection';
 
 const Dashboard = () => {
-  // Use mock data for testing without backend
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: () => Promise.resolve(mockDashboardData.stats),
+    queryFn: dashboardAPI.getStats,
+    retry: 1,
+    onError: (error) => {
+      console.error('Dashboard stats error:', error);
+    }
   });
 
-  const { data: recentData, isLoading: recentLoading } = useQuery({
+  const { data: recentData, isLoading: recentLoading, error: recentError } = useQuery({
     queryKey: ['dashboard-recent-data'],
-    queryFn: () => Promise.resolve(mockDashboardData.recentData),
+    queryFn: dashboardAPI.getRecentData,
+    retry: 1,
+    onError: (error) => {
+      console.error('Dashboard recent data error:', error);
+    }
   });
 
-  const { data: chartData, isLoading: chartLoading } = useQuery({
+  const { data: chartData, isLoading: chartLoading, error: chartError } = useQuery({
     queryKey: ['dashboard-chart-data'],
-    queryFn: () => Promise.resolve(mockDashboardData.dataByStatus),
+    queryFn: () => dashboardAPI.getChartData('7d'),
+    retry: 1,
+    onError: (error) => {
+      console.error('Dashboard chart data error:', error);
+    }
   });
 
   const statCards = [
@@ -152,7 +162,11 @@ const Dashboard = () => {
             Xem tất cả
           </button>
         </div>
-        <RecentDataTable data={recentData} isLoading={recentLoading} />
+        <RecentDataTable
+          data={recentData}
+          isLoading={recentLoading}
+          error={recentError}
+        />
       </div>
 
       {/* Quick Actions */}

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from '../services/api';
-import mockAuthService from '../services/mockAuth';
 
 const useAuthStore = create(
   persist(
@@ -14,10 +13,11 @@ const useAuthStore = create(
       login: async (email, password) => {
         set({ isLoading: true });
         try {
-          // Use mock service for testing without backend
-          const response = await mockAuthService.login(email, password);
-          const { user, token } = response.data;
+          const response = await authAPI.login(email, password);
+          console.log('Login response:', response.data);
+          const { user, token } = response.data.data;
 
+          console.log('Setting auth state:', { user, token });
           set({
             user,
             token,
@@ -30,7 +30,7 @@ const useAuthStore = create(
           set({ isLoading: false });
           return {
             success: false,
-            error: error.message || 'Đăng nhập thất bại'
+            error: error.response?.data?.error || 'Đăng nhập thất bại'
           };
         }
       },
@@ -52,9 +52,8 @@ const useAuthStore = create(
         if (!token) return false;
 
         try {
-          // Use mock service for testing without backend
-          const response = await mockAuthService.checkAuth(token);
-          set({ user: response.data.user, isAuthenticated: true });
+          const response = await authAPI.getProfile();
+          set({ user: response.data, isAuthenticated: true });
           return true;
         } catch (error) {
           set({

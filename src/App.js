@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Auth/Login';
+import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard/Dashboard';
 import CrawlSources from './pages/CrawlSources/CrawlSources';
 import CrawlData from './pages/CrawlData/CrawlData';
@@ -20,6 +21,10 @@ function App() {
         <Routes>
           <Route path="/login" element={
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+          } />
+          
+          <Route path="/register" element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />
           } />
           
           <Route path="/" element={

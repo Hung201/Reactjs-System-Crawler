@@ -3,7 +3,11 @@ import { format } from 'date-fns';
 import { ExternalLink, Eye } from 'lucide-react';
 import { DATA_TYPE_LABELS, DATA_STATUS_LABELS } from '../../../utils/constants';
 
-const RecentDataTable = ({ data, isLoading }) => {
+const RecentDataTable = ({ data, isLoading, error }) => {
+  console.log('RecentDataTable - data:', data);
+  console.log('RecentDataTable - data type:', typeof data);
+  console.log('RecentDataTable - isArray:', Array.isArray(data));
+
   if (isLoading) {
     return (
       <div className="animate-pulse">
@@ -16,10 +20,24 @@ const RecentDataTable = ({ data, isLoading }) => {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+        <p className="text-xs text-gray-400 mt-2">
+          {error.message || 'Không thể kết nối đến server'}
+        </p>
+      </div>
+    );
+  }
+
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">Không có dữ liệu gần đây</p>
+        <p className="text-xs text-gray-400 mt-2">
+          Data type: {typeof data} | Is Array: {Array.isArray(data) ? 'Yes' : 'No'}
+        </p>
       </div>
     );
   }

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Filter, Play, Edit, Trash2, MoreVertical } from 'lucide-react';
 import { sourcesAPI } from '../../services/api';
-import { mockSources } from '../../mocks/data';
 import { SOURCE_STATUS_LABELS, DATA_TYPE_LABELS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import SourceModal from './components/SourceModal';
@@ -19,10 +18,13 @@ const CrawlSources = () => {
 
   const queryClient = useQueryClient();
 
-  // Use mock data for testing without backend
-  const { data: sources, isLoading } = useQuery({
+  const { data: sources, isLoading, error } = useQuery({
     queryKey: ['sources', { search: searchTerm, status: statusFilter, type: typeFilter }],
-    queryFn: () => Promise.resolve({ data: mockSources }),
+    queryFn: () => sourcesAPI.getAll({ search: searchTerm, status: statusFilter, type: typeFilter }),
+    retry: 1,
+    onError: (error) => {
+      console.error('Sources API error:', error);
+    }
   });
 
   const runActorMutation = useMutation({
@@ -87,7 +89,11 @@ const CrawlSources = () => {
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredSources = sources?.data || [];
+  const filteredSources = Array.isArray(sources?.data) ? sources.data : [];
+  
+  console.log('CrawlSources - sources:', sources);
+  console.log('CrawlSources - sources.data:', sources?.data);
+  console.log('CrawlSources - filteredSources:', filteredSources);
 
   return (
     <div className="space-y-6">
@@ -253,7 +259,16 @@ const CrawlSources = () => {
           </div>
         )}
 
-        {filteredSources.length === 0 && !isLoading && (
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+            <p className="text-xs text-gray-400 mt-2">
+              {error.message || 'Không thể kết nối đến server'}
+            </p>
+          </div>
+        )}
+
+        {filteredSources.length === 0 && !isLoading && !error && (
           <div className="text-center py-8">
             <p className="text-gray-500">Không có nguồn crawl nào</p>
           </div>

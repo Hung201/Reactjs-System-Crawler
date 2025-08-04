@@ -9,9 +9,13 @@ const RunLogs = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [actorFilter, setActorFilter] = useState('');
 
-  const { data: logs, isLoading } = useQuery({
+  const { data: logs, isLoading, error } = useQuery({
     queryKey: ['run-logs', { search: searchTerm, status: statusFilter, actor: actorFilter }],
     queryFn: () => logsAPI.getAll({ search: searchTerm, status: statusFilter, actor: actorFilter }),
+    retry: 1,
+    onError: (error) => {
+      console.error('RunLogs API error:', error);
+    }
   });
 
   const getStatusColor = (status) => {
@@ -49,7 +53,7 @@ const RunLogs = () => {
     return `${minutes}m ${seconds}s`;
   };
 
-  const filteredLogs = logs?.data || [];
+  const filteredLogs = Array.isArray(logs?.data) ? logs.data : [];
 
   return (
     <div className="space-y-6">
@@ -196,7 +200,16 @@ const RunLogs = () => {
           </div>
         )}
 
-        {filteredLogs.length === 0 && !isLoading && (
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+            <p className="text-xs text-gray-400 mt-2">
+              {error.message || 'Không thể kết nối đến server'}
+            </p>
+          </div>
+        )}
+
+        {filteredLogs.length === 0 && !isLoading && !error && (
           <div className="text-center py-8">
             <p className="text-gray-500">Không có log nào</p>
           </div>

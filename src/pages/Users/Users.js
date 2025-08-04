@@ -14,9 +14,13 @@ const Users = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error } = useQuery({
     queryKey: ['users', { search: searchTerm, role: roleFilter }],
     queryFn: () => usersAPI.getAll({ search: searchTerm, role: roleFilter }),
+    retry: 1,
+    onError: (error) => {
+      console.error('Users API error:', error);
+    }
   });
 
   const deleteMutation = useMutation({
@@ -68,7 +72,7 @@ const Users = () => {
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredUsers = users?.data || [];
+  const filteredUsers = Array.isArray(users?.data) ? users.data : [];
 
   return (
     <div className="space-y-6">
@@ -203,7 +207,16 @@ const Users = () => {
           </div>
         )}
 
-        {filteredUsers.length === 0 && !isLoading && (
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+            <p className="text-xs text-gray-400 mt-2">
+              {error.message || 'Không thể kết nối đến server'}
+            </p>
+          </div>
+        )}
+
+        {filteredUsers.length === 0 && !isLoading && !error && (
           <div className="text-center py-8">
             <p className="text-gray-500">Không có người dùng nào</p>
           </div>

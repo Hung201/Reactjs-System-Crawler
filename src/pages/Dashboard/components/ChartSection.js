@@ -10,7 +10,7 @@ const ChartSection = ({ data, isLoading }) => {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">Không có dữ liệu biểu đồ</p>
@@ -34,18 +34,18 @@ const ChartSection = ({ data, isLoading }) => {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="date" 
+          <XAxis
+            dataKey="date"
             tick={{ fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
-          <YAxis 
+          <YAxis
             tick={{ fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip 
+          <Tooltip
             contentStyle={{
               backgroundColor: 'white',
               border: '1px solid #e5e7eb',
@@ -53,33 +53,33 @@ const ChartSection = ({ data, isLoading }) => {
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             }}
           />
-          <Line 
-            type="monotone" 
-            dataKey="products" 
-            stroke="#8b5cf6" 
+          <Line
+            type="monotone"
+            dataKey="products"
+            stroke="#8b5cf6"
             strokeWidth={2}
             dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
             activeDot={{ r: 6 }}
           />
-          <Line 
-            type="monotone" 
-            dataKey="news" 
-            stroke="#3b82f6" 
+          <Line
+            type="monotone"
+            dataKey="news"
+            stroke="#3b82f6"
             strokeWidth={2}
             dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
             activeDot={{ r: 6 }}
           />
-          <Line 
-            type="monotone" 
-            dataKey="videos" 
-            stroke="#f59e0b" 
+          <Line
+            type="monotone"
+            dataKey="videos"
+            stroke="#f59e0b"
             strokeWidth={2}
             dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
             activeDot={{ r: 6 }}
           />
         </LineChart>
       </ResponsiveContainer>
-      
+
       {/* Legend */}
       <div className="flex items-center justify-center space-x-6 mt-4">
         <div className="flex items-center">
