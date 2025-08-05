@@ -15,7 +15,18 @@ const useAuthStore = create(
         try {
           const response = await authAPI.login(email, password);
           console.log('Login response:', response.data);
-          const { user, token } = response.data.data;
+          
+          // Kiểm tra cấu trúc response
+          let user, token;
+          if (response.data.data) {
+            // Nếu có nested data
+            ({ user, token } = response.data.data);
+          } else if (response.data.user && response.data.token) {
+            // Nếu data trực tiếp
+            ({ user, token } = response.data);
+          } else {
+            throw new Error('Invalid response structure');
+          }
 
           console.log('Setting auth state:', { user, token });
           set({
@@ -27,10 +38,11 @@ const useAuthStore = create(
 
           return { success: true };
         } catch (error) {
+          console.error('Login error:', error);
           set({ isLoading: false });
           return {
             success: false,
-            error: error.response?.data?.error || 'Đăng nhập thất bại'
+            error: error.response?.data?.error || error.message || 'Đăng nhập thất bại'
           };
         }
       },

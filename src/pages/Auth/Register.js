@@ -37,14 +37,14 @@ const Register = () => {
       });
 
       if (response.data.success) {
-        toast.success(response.data.message || 'Đăng ký thành công! Vui lòng đăng nhập.');
+        toast.success('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
         navigate('/login');
       } else {
-        toast.error(response.data.error || 'Đăng ký thất bại');
+        toast.error(`${response.data.error || 'Đăng ký thất bại'}`);
       }
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Đăng ký thất bại';
-      toast.error(errorMessage);
+      toast.error(`${errorMessage}`);
 
       // Nếu email đã tồn tại, focus vào field email
       if (errorMessage.includes('Email đã được sử dụng')) {

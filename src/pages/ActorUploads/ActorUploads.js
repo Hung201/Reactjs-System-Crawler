@@ -5,12 +5,14 @@ import { actorsAPI } from '../../services/api';
 import { ACTOR_STATUS_LABELS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/Common/ConfirmModal';
+import UploadActorModal from '../../components/ActorUploads/UploadActorModal';
 
 const ActorUploads = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [actorToDelete, setActorToDelete] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -81,7 +83,10 @@ const ActorUploads = () => {
           <h1 className="text-2xl font-bold text-gray-900">Quản lý Actor</h1>
           <p className="text-gray-600">Upload và quản lý các actor Apify</p>
         </div>
-        <button className="btn-primary flex items-center">
+        <button
+          onClick={() => setShowUploadModal(true)}
+          className="btn-primary flex items-center"
+        >
           <Upload size={20} className="mr-2" />
           Upload Actor
         </button>
@@ -243,6 +248,12 @@ const ActorUploads = () => {
         message={`Bạn có chắc chắn muốn xóa actor "${actorToDelete?.actorName}"?`}
         confirmText="Xóa"
         cancelText="Hủy"
+      />
+
+      {/* Upload Actor Modal */}
+      <UploadActorModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
       />
     </div>
   );
