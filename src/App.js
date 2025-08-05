@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Auth/Login';
@@ -22,11 +23,11 @@ function App() {
           <Route path="/login" element={
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
           } />
-          
+
           <Route path="/register" element={
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />
           } />
-          
+
           <Route path="/" element={
             <ProtectedRoute>
               <Layout />
@@ -41,6 +42,48 @@ function App() {
             <Route path="logs" element={<RunLogs />} />
           </Route>
         </Routes>
+
+        {/* Toast Notifications */}
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          gutter={8}
+          containerClassName=""
+          containerStyle={{}}
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              fontSize: '14px',
+              padding: '16px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            },
+            success: {
+              duration: 3000,
+              style: {
+                background: '#10B981',
+                color: '#fff',
+              },
+              iconTheme: {
+                primary: '#fff',
+                secondary: '#10B981',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#EF4444',
+                color: '#fff',
+              },
+              iconTheme: {
+                primary: '#fff',
+                secondary: '#EF4444',
+              },
+            },
+          }}
+        />
       </div>
     </Router>
   );

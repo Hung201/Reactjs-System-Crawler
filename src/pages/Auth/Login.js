@@ -33,10 +33,10 @@ const Login = () => {
     console.log('Kết quả đăng nhập:', result);
 
     if (result.success) {
-      toast.success('Đăng nhập thành công!');
+      toast.success('Đăng nhập thành công! Chào mừng bạn trở lại!');
       // useEffect sẽ handle redirect
     } else {
-      toast.error(result.error || 'Đăng nhập thất bại');
+      toast.error(`${result.error || 'Đăng nhập thất bại'}`);
     }
   };
 

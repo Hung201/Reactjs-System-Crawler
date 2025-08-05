@@ -1,55 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Edit, Trash2, Shield } from 'lucide-react';
 import { usersAPI } from '../../services/api';
 import { USER_ROLE_LABELS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/Common/ConfirmModal';
+import AddUserModal from '../../components/Users/AddUserModal';
+import EditUserModal from '../../components/Users/EditUserModal';
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const queryClient = useQueryClient();
 
+  // Reset to page 1 when search, filter, or pageSize changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, pageSize]);
+
   const { data: users, isLoading, error } = useQuery({
-    queryKey: ['users', { search: searchTerm, role: roleFilter }],
-    queryFn: () => usersAPI.getAll({ search: searchTerm, role: roleFilter }),
+    queryKey: ['users', { search: searchTerm, role: roleFilter, page: currentPage, limit: pageSize }],
+    queryFn: () => usersAPI.getAll({ search: searchTerm, role: roleFilter, page: currentPage, limit: pageSize }),
     retry: 1,
     onError: (error) => {
       console.error('Users API error:', error);
+    },
+    onSuccess: (data) => {
+      console.log('Users API success:', data);
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => usersAPI.delete(id),
     onSuccess: () => {
-      toast.success('Người dùng đã được xóa!');
+      toast.success('Người dùng đã được xóa thành công!');
       queryClient.invalidateQueries(['users']);
       setShowDeleteModal(false);
       setUserToDelete(null);
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Không thể xóa người dùng');
+      toast.error(`${error.response?.data?.message || 'Không thể xóa người dùng'}`);
     },
   });
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ id, role }) => usersAPI.updateRole(id, role),
     onSuccess: () => {
-      toast.success('Vai trò đã được cập nhật!');
+      toast.success('Vai trò đã được cập nhật thành công!');
       queryClient.invalidateQueries(['users']);
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Không thể cập nhật vai trò');
+      toast.error(`${error.response?.data?.message || 'Không thể cập nhật vai trò'}`);
     },
   });
 
   const handleDelete = (user) => {
     setUserToDelete(user);
     setShowDeleteModal(true);
+  };
+
+  const handleEdit = (user) => {
+    setUserToEdit(user);
+    setShowEditModal(true);
   };
 
   const confirmDelete = () => {
@@ -67,12 +87,31 @@ const Users = () => {
       admin: 'bg-red-100 text-red-800',
       editor: 'bg-blue-100 text-blue-800',
       viewer: 'bg-green-100 text-green-800',
-      crawler: 'bg-purple-100 text-purple-800',
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredUsers = Array.isArray(users?.data) ? users.data : [];
+  // Debug: Log the structure of users data
+  console.log('Users data structure:', users);
+
+  // Handle different response structures
+  let filteredUsers = [];
+  let pagination = null;
+
+  if (users?.data?.data) {
+    // If response has nested data structure: { success: true, data: [...], pagination: {...} }
+    filteredUsers = Array.isArray(users.data.data) ? users.data.data : [];
+    pagination = users.data.pagination;
+  } else if (users?.data) {
+    // If response has direct data structure: { data: [...], pagination: {...} }
+    filteredUsers = Array.isArray(users.data) ? users.data : [];
+    pagination = users.pagination;
+  } else if (Array.isArray(users)) {
+    // If response is directly an array
+    filteredUsers = users;
+  }
+
+  console.log('Filtered users:', filteredUsers);
 
   return (
     <div className="space-y-6">
@@ -82,7 +121,10 @@ const Users = () => {
           <h1 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h1>
           <p className="text-gray-600">Quản lý tài khoản và phân quyền</p>
         </div>
-        <button className="btn-primary flex items-center">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="btn-primary flex items-center"
+        >
           <Plus size={20} className="mr-2" />
           Thêm người dùng
         </button>
@@ -90,7 +132,7 @@ const Users = () => {
 
       {/* Filters */}
       <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -101,7 +143,7 @@ const Users = () => {
               className="input-field pl-10"
             />
           </div>
-          
+
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -111,13 +153,29 @@ const Users = () => {
             <option value="admin">Quản trị viên</option>
             <option value="editor">Biên tập viên</option>
             <option value="viewer">Người xem</option>
-            <option value="crawler">Crawler</option>
+          </select>
+
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="input-field"
+          >
+            <option value={10}>10 người dùng/trang</option>
+            <option value={20}>20 người dùng/trang</option>
+            <option value={30}>30 người dùng/trang</option>
+            <option value={40}>40 người dùng/trang</option>
+            <option value={50}>50 người dùng/trang</option>
           </select>
 
           <button
             onClick={() => {
               setSearchTerm('');
               setRoleFilter('');
+              setPageSize(10);
+              setCurrentPage(1);
             }}
             className="btn-secondary"
           >
@@ -175,7 +233,6 @@ const Users = () => {
                         <option value="admin">Quản trị viên</option>
                         <option value="editor">Biên tập viên</option>
                         <option value="viewer">Người xem</option>
-                        <option value="crawler">Crawler</option>
                       </select>
                     </td>
                     <td className="table-cell">
@@ -186,6 +243,7 @@ const Users = () => {
                     <td className="table-cell">
                       <div className="flex items-center space-x-2">
                         <button
+                          onClick={() => handleEdit(user)}
                           className="p-1 text-blue-600 hover:text-blue-800"
                           title="Chỉnh sửa"
                         >
@@ -221,6 +279,66 @@ const Users = () => {
             <p className="text-gray-500">Không có người dùng nào</p>
           </div>
         )}
+
+        {/* Pagination */}
+        {pagination && pagination.pages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-700">
+                Hiển thị {((pagination.page - 1) * pagination.limit) + 1} đến{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} trong tổng số{' '}
+                {pagination.total} người dùng
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Trước
+              </button>
+
+              {/* Page numbers */}
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                  let pageNum;
+                  if (pagination.pages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= pagination.pages - 2) {
+                    pageNum = pagination.pages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1 text-sm border rounded-md ${currentPage === pageNum
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'hover:bg-gray-50'
+                        }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
+                disabled={currentPage === pagination.pages}
+                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -235,6 +353,22 @@ const Users = () => {
         message={`Bạn có chắc chắn muốn xóa người dùng "${userToDelete?.name}"?`}
         confirmText="Xóa"
         cancelText="Hủy"
+      />
+
+      {/* Add User Modal */}
+      <AddUserModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+      />
+
+      {/* Edit User Modal */}
+      <EditUserModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setUserToEdit(null);
+        }}
+        user={userToEdit}
       />
     </div>
   );
