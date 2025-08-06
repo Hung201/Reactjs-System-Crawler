@@ -10,6 +10,8 @@ import CrawlSources from './pages/CrawlSources/CrawlSources';
 import CrawlData from './pages/CrawlData/CrawlData';
 import Users from './pages/Users/Users';
 import ActorUploads from './pages/ActorUploads/ActorUploads';
+import ActorEditor from './pages/ActorEditor/ActorEditor';
+import NewActorEditor from './pages/ActorEditor/NewActorEditor';
 import RunLogs from './pages/RunLogs/RunLogs';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
@@ -39,6 +41,8 @@ function App() {
             <Route path="data" element={<CrawlData />} />
             <Route path="users" element={<Users />} />
             <Route path="actors" element={<ActorUploads />} />
+            <Route path="actors/:id/edit" element={<ActorEditor />} />
+            <Route path="actors/new" element={<NewActorEditor />} />
             <Route path="logs" element={<RunLogs />} />
           </Route>
         </Routes>

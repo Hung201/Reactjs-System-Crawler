@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Play, Edit, Trash2, Upload, Code } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { actorsAPI } from '../../services/api';
 import { ACTOR_STATUS_LABELS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 import UploadActorModal from '../../components/ActorUploads/UploadActorModal';
+import { useAuthStore } from '../../stores/authStore';
 
 const ActorUploads = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,13 +17,29 @@ const ActorUploads = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: actors, isLoading, error } = useQuery({
     queryKey: ['actors', { search: searchTerm, status: statusFilter }],
     queryFn: () => actorsAPI.getAll({ search: searchTerm, status: statusFilter }),
     retry: 1,
+    staleTime: 0, // Force refetch
+    cacheTime: 0, // Disable cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     onError: (error) => {
       console.error('Actors API error:', error);
+      console.error('Error details:', error.response?.data);
+    },
+    onSuccess: (data) => {
+      console.log('=== ACTORS API SUCCESS ===');
+      console.log('Full response:', data);
+      console.log('data type:', typeof data);
+      console.log('data keys:', Object.keys(data || {}));
+      console.log('data.data:', data?.data);
+      console.log('data.data type:', typeof data?.data);
+      console.log('data.data length:', data?.data?.length);
+      console.log('data.data[0]:', data?.data?.[0]);
     }
   });
 
@@ -64,32 +82,123 @@ const ActorUploads = () => {
     runActorMutation.mutate(id);
   };
 
+  const handleEditActor = (id) => {
+    navigate(`/actors/${id}/edit`);
+  };
+
   const getStatusColor = (status) => {
     const colors = {
-      ready: 'bg-green-100 text-green-800',
+      active: 'bg-green-100 text-green-800',
       error: 'bg-red-100 text-red-800',
       running: 'bg-blue-100 text-blue-800',
+      draft: 'bg-yellow-100 text-yellow-800',
+      inactive: 'bg-gray-100 text-gray-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredActors = Array.isArray(actors?.data) ? actors.data : [];
+  // Use real API data with fallback to mock data if API fails
+  // Handle different API response structures
+  // API returns: { success: true, data: [...] }
+  // But React Query wraps it: { data: { success: true, data: [...] } }
+  const actorsData = actors?.data?.data || actors?.data || [];
+  const filteredActors = Array.isArray(actorsData) ? actorsData :
+    (error ? [
+      {
+        _id: 'mock-actor-1',
+        name: 'Web Scraper Actor',
+        description: 'Actor để crawl dữ liệu từ website',
+        status: 'active',
+        runInfo: { lastRunAt: new Date('2024-01-15T10:30:00') },
+        createdBy: { name: 'Admin User' }
+      },
+      {
+        _id: 'mock-actor-2',
+        name: 'E-commerce Crawler',
+        description: 'Crawl sản phẩm từ các trang thương mại điện tử',
+        status: 'running',
+        runInfo: { lastRunAt: new Date('2024-01-15T09:15:00') },
+        createdBy: { name: 'Editor User' }
+      },
+      {
+        _id: 'mock-actor-3',
+        name: 'News Aggregator',
+        description: 'Thu thập tin tức từ nhiều nguồn khác nhau',
+        status: 'error',
+        runInfo: { lastRunAt: new Date('2024-01-14T16:45:00') },
+        createdBy: { name: 'Crawler User' }
+      }
+    ] : []);
+
+  // Debug logs
+  console.log('=== REACT QUERY DEBUG ===');
+  console.log('actors response:', actors);
+  console.log('actors type:', typeof actors);
+  console.log('actors keys:', Object.keys(actors || {}));
+  console.log('actors?.data:', actors?.data);
+  console.log('actors?.data type:', typeof actors?.data);
+  console.log('actors?.data length:', actors?.data?.length);
+  console.log('actors?.data?.data:', actors?.data?.data);
+  console.log('actors?.data?.data type:', typeof actors?.data?.data);
+  console.log('actors?.data?.data length:', actors?.data?.data?.length);
+  console.log('actorsData:', actorsData);
+  console.log('actorsData type:', typeof actorsData);
+  console.log('actorsData length:', actorsData?.length);
+  console.log('filteredActors:', filteredActors);
+  console.log('filteredActors type:', typeof filteredActors);
+  console.log('filteredActors length:', filteredActors?.length);
+  console.log('isLoading:', isLoading);
+  console.log('error:', error);
+
+  // Check auth token
+  const token = useAuthStore.getState().token;
+  console.log('Auth token:', token ? 'Present' : 'Missing');
+  console.log('Is authenticated:', useAuthStore.getState().isAuthenticated);
+
+  // Debug rendering conditions
+  console.log('filteredActors.length:', filteredActors.length);
+  console.log('!isLoading:', !isLoading);
+  console.log('!error:', !error);
+  console.log('Show empty message:', filteredActors.length === 0 && !isLoading && !error);
+
+  // Force re-render when data changes
+  useEffect(() => {
+    console.log('=== USE EFFECT TRIGGERED ===');
+    console.log('actors changed:', actors);
+    console.log('filteredActors in useEffect:', filteredActors);
+    console.log('filteredActors.length in useEffect:', filteredActors?.length);
+  }, [actors, filteredActors]);
+
+  // Force invalidate cache on mount
+  useEffect(() => {
+    console.log('=== COMPONENT MOUNTED ===');
+    queryClient.invalidateQueries(['actors']);
+  }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={`actors-${filteredActors.length}-${isLoading}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý Actor</h1>
           <p className="text-gray-600">Upload và quản lý các actor Apify</p>
         </div>
-        <button
-          onClick={() => setShowUploadModal(true)}
-          className="btn-primary flex items-center"
-        >
-          <Upload size={20} className="mr-2" />
-          Upload Actor
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => navigate('/actors/new')}
+            className="btn-primary flex items-center"
+          >
+            <Plus size={20} className="mr-2" />
+            Tạo Actor Mới
+          </button>
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="btn-secondary flex items-center"
+          >
+            <Upload size={20} className="mr-2" />
+            Upload Actor
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -139,6 +248,19 @@ const ActorUploads = () => {
               ))}
             </div>
           </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500">Lỗi khi tải dữ liệu</p>
+            <p className="text-xs text-gray-400 mt-2">
+              {error.message || 'Không thể kết nối đến server'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 btn-secondary"
+            >
+              Thử lại
+            </button>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -161,7 +283,7 @@ const ActorUploads = () => {
                           <Code className="w-5 h-5 text-purple-600" />
                         </div>
                         <div className="ml-3">
-                          <p className="font-medium text-gray-900">{actor.actorName}</p>
+                          <p className="font-medium text-gray-900">{actor.name}</p>
                         </div>
                       </div>
                     </td>
@@ -172,20 +294,24 @@ const ActorUploads = () => {
                     </td>
                     <td className="table-cell">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(actor.status)}`}>
-                        {ACTOR_STATUS_LABELS[actor.status]}
+                        {actor.status === 'active' ? 'Sẵn sàng' :
+                          actor.status === 'running' ? 'Đang chạy' :
+                            actor.status === 'error' ? 'Lỗi' :
+                              actor.status === 'draft' ? 'Nháp' :
+                                actor.status === 'inactive' ? 'Tạm dừng' : 'Không xác định'}
                       </span>
                     </td>
                     <td className="table-cell">
                       <span className="text-sm text-gray-500">
-                        {actor.lastRunAt
-                          ? new Date(actor.lastRunAt).toLocaleDateString('vi-VN')
+                        {actor.runInfo?.lastRunAt
+                          ? new Date(actor.runInfo.lastRunAt).toLocaleDateString('vi-VN')
                           : 'Chưa chạy'
                         }
                       </span>
                     </td>
                     <td className="table-cell">
                       <span className="text-sm text-gray-900">
-                        {actor.uploadedBy?.name || 'Unknown'}
+                        {actor.createdBy?.name || 'Unknown'}
                       </span>
                     </td>
                     <td className="table-cell">
@@ -199,6 +325,7 @@ const ActorUploads = () => {
                           <Play size={16} />
                         </button>
                         <button
+                          onClick={() => handleEditActor(actor._id)}
                           className="p-1 text-blue-600 hover:text-blue-800"
                           title="Chỉnh sửa"
                         >
@@ -228,6 +355,11 @@ const ActorUploads = () => {
             </p>
           </div>
         )}
+
+        {/* Debug info */}
+        <div className="text-xs text-gray-400 p-2 bg-gray-50">
+          Debug: length={filteredActors.length}, loading={isLoading}, error={error ? 'yes' : 'no'}
+        </div>
 
         {filteredActors.length === 0 && !isLoading && !error && (
           <div className="text-center py-8">

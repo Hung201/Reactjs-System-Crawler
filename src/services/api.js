@@ -80,6 +80,11 @@ export const actorsAPI = {
     update: (id, data) => api.put(`/actors/${id}`, data),
     delete: (id) => api.delete(`/actors/${id}`),
     run: (id) => api.post(`/actors/${id}/run`),
+    build: (id) => api.post(`/actors/${id}/build`),
+    saveSource: (actorId, filePath, content) =>
+        api.post(`/actors/${actorId}/source`, { filePath, content }),
+    getSource: (actorId, filePath) =>
+        api.get(`/actors/${actorId}/source`, { params: { filePath } }),
 };
 
 // Run Logs API
