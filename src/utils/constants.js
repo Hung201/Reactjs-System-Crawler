@@ -103,6 +103,21 @@ export const API_ENDPOINTS = {
   DASHBOARD: '/dashboard',
 };
 
+// Campaign Status
+export const CAMPAIGN_STATUS = {
+  ACTIVE: 'active',
+  PAUSED: 'paused',
+  COMPLETED: 'completed',
+  DRAFT: 'draft',
+};
+
+export const CAMPAIGN_STATUS_LABELS = {
+  [CAMPAIGN_STATUS.ACTIVE]: 'Đang chạy',
+  [CAMPAIGN_STATUS.PAUSED]: 'Tạm dừng',
+  [CAMPAIGN_STATUS.COMPLETED]: 'Hoàn thành',
+  [CAMPAIGN_STATUS.DRAFT]: 'Bản nháp',
+};
+
 // Navigation
 export const NAV_ITEMS = [
   {
@@ -134,6 +149,12 @@ export const NAV_ITEMS = [
     label: 'Actor',
     icon: 'Code',
     roles: [USER_ROLES.ADMIN, USER_ROLES.CRAWLER],
+  },
+  {
+    path: '/campaigns',
+    label: 'Chiến dịch',
+    icon: 'Target',
+    roles: [USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR],
   },
   {
     path: '/logs',

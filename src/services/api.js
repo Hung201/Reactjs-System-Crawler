@@ -79,12 +79,34 @@ export const actorsAPI = {
     upload: (data) => api.post('/actors', data),
     update: (id, data) => api.put(`/actors/${id}`, data),
     delete: (id) => api.delete(`/actors/${id}`),
-    run: (id) => api.post(`/actors/${id}/run`),
-    build: (id) => api.post(`/actors/${id}/build`),
+
+    // File-based storage APIs (new endpoints)
+    saveFile: (actorId, filePath, content) =>
+        api.put(`/actors/${actorId}/files/${encodeURIComponent(filePath)}`, { content }),
+    getFile: (actorId, filePath) =>
+        api.get(`/actors/${actorId}/files/${encodeURIComponent(filePath)}`),
+    getFiles: (actorId) =>
+        api.get(`/actors/${actorId}/files`),
+    saveFiles: (actorId, files) =>
+        api.post(`/actors/${actorId}/files`, { files }),
+    deleteFile: (actorId, filePath) =>
+        api.delete(`/actors/${actorId}/files/${encodeURIComponent(filePath)}`),
+
+    // Build and Run APIs (new endpoints)
+    build: (actorId) => api.post(`/actors/${actorId}/build/file`),
+    run: (actorId, input = {}) => api.post(`/actors/${actorId}/run/file`, { input }),
+
+    // Legacy APIs (for backward compatibility)
     saveSource: (actorId, filePath, content) =>
-        api.post(`/actors/${actorId}/source`, { filePath, content }),
+        api.post(`/actors/${actorId}/source/file`, { filePath, content }),
     getSource: (actorId, filePath) =>
-        api.get(`/actors/${actorId}/source`, { params: { filePath } }),
+        api.get(`/actors/${actorId}/source/file`, { params: { filePath } }),
+
+    // Streaming API
+    runStream: (actorId, input) =>
+        api.post(`/actors/${actorId}/run/stream`, { input }, {
+            responseType: 'stream'
+        })
 };
 
 // Run Logs API
@@ -100,6 +122,18 @@ export const dashboardAPI = {
     getStats: () => api.get('/dashboard/stats'),
     getRecentData: () => api.get('/dashboard/recent-data'),
     getChartData: (period) => api.get(`/dashboard/chart-data?period=${period}`),
+};
+
+// Campaigns API
+export const campaignsAPI = {
+    getAll: (params) => api.get('/campaigns', { params }),
+    getById: (id) => api.get(`/campaigns/${id}`),
+    create: (data) => api.post('/campaigns', data),
+    update: (id, data) => api.put(`/campaigns/${id}`, data),
+    delete: (id) => api.delete(`/campaigns/${id}`),
+    run: (id) => api.post(`/campaigns/${id}/run`),
+    getStatus: (id) => api.get(`/campaigns/${id}/status`),
+    getRuns: (id) => api.get(`/campaigns/${id}/runs`),
 };
 
 export default api; 
