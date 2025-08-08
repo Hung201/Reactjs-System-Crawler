@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  Home, 
-  Globe, 
-  Database, 
-  Users, 
-  Code, 
-  FileText, 
-  Menu, 
+import {
+  Home,
+  Globe,
+  Database,
+  Users,
+  Code,
+  FileText,
+  Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  Target
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { NAV_ITEMS } from '../../utils/constants';
@@ -34,11 +35,12 @@ const Sidebar = () => {
       Users,
       Code,
       FileText,
+      Target,
     };
     return icons[iconName] || Home;
   };
 
-  const filteredNavItems = NAV_ITEMS.filter(item => 
+  const filteredNavItems = NAV_ITEMS.filter(item =>
     item.roles.includes(user?.role)
   );
 
@@ -46,7 +48,7 @@ const Sidebar = () => {
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
@@ -74,15 +76,15 @@ const Sidebar = () => {
             {filteredNavItems.map((item) => {
               const Icon = getIcon(item.icon);
               const isExpanded = expandedItems[item.path];
-              
+
               return (
                 <li key={item.path}>
                   <NavLink
                     to={item.path}
                     className={({ isActive }) => `
                       flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200
-                      ${isActive 
-                        ? 'bg-primary-100 text-primary-700' 
+                      ${isActive
+                        ? 'bg-primary-100 text-primary-700'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                       }
                     `}

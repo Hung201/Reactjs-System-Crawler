@@ -12,7 +12,11 @@ import Users from './pages/Users/Users';
 import ActorUploads from './pages/ActorUploads/ActorUploads';
 import ActorEditor from './pages/ActorEditor/ActorEditor';
 import NewActorEditor from './pages/ActorEditor/NewActorEditor';
+import BuildLog from './pages/ActorEditor/BuildLog';
+import RunLog from './pages/ActorEditor/RunLog';
 import RunLogs from './pages/RunLogs/RunLogs';
+import Campaigns from './pages/Campaigns/Campaigns';
+import CampaignDetail from './pages/Campaigns/CampaignDetail';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
@@ -42,7 +46,11 @@ function App() {
             <Route path="users" element={<Users />} />
             <Route path="actors" element={<ActorUploads />} />
             <Route path="actors/:id/edit" element={<ActorEditor />} />
+            <Route path="actors/:id/build" element={<BuildLog />} />
+            <Route path="actors/:id/run" element={<RunLog />} />
             <Route path="actors/new" element={<NewActorEditor />} />
+            <Route path="campaigns" element={<Campaigns />} />
+            <Route path="campaigns/:id" element={<CampaignDetail />} />
             <Route path="logs" element={<RunLogs />} />
           </Route>
         </Routes>
