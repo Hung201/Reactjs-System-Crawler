@@ -81,7 +81,8 @@ const CampaignsTable = ({
                                     <div>
                                         <button
                                             onClick={() => navigate(`/campaigns/${campaign.id}`)}
-                                            className="text-sm font-medium text-gray-900 hover:text-primary-600 transition-colors text-left"
+                                            className="text-sm font-medium text-gray-900 hover:text-primary-600 hover:underline transition-colors text-left cursor-pointer"
+                                            title="Click để xem chi tiết campaign"
                                         >
                                             {typeof campaign.name === 'string' ? campaign.name : 'Unnamed Campaign'}
                                         </button>

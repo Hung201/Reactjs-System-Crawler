@@ -3,8 +3,7 @@ import {
     Play,
     Pause,
     Edit,
-    Trash2,
-    Eye
+    Trash2
 } from 'lucide-react';
 import { CAMPAIGN_STATUS } from '../../utils/constants';
 
@@ -42,16 +41,7 @@ const CampaignActions = ({
                 )}
             </button>
 
-            {/* View Data Button - only show for completed campaigns */}
-            {campaign.status === CAMPAIGN_STATUS.COMPLETED && (
-                <button
-                    onClick={() => navigate(`/campaigns/${campaign.id}`)}
-                    className="text-blue-600 hover:text-blue-900"
-                    title="Xem dữ liệu cào"
-                >
-                    <Eye size={16} />
-                </button>
-            )}
+
 
             {campaign.status === CAMPAIGN_STATUS.ACTIVE ? (
                 <button

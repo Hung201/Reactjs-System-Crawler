@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { CAMPAIGN_STATUS, CAMPAIGN_STATUS_LABELS } from '../../utils/constants';
 import CampaignModal from './components/CampaignModal';
 import ConfirmModal from '../../components/Common/ConfirmModal';
+import Toast from '../../components/Common/Toast';
+import { useToast } from '../../hooks/useToast';
 import { useAuthStore } from '../../stores/authStore';
 
 // Import new components
@@ -17,6 +19,7 @@ import { useCampaigns } from '../../hooks/useCampaigns';
 const Campaigns = () => {
     const navigate = useNavigate();
     const { token, isAuthenticated, user } = useAuthStore();
+    const { toast, showSuccess, showError, showWarning, showInfo, hideToast } = useToast();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -98,7 +101,7 @@ const Campaigns = () => {
                 setShowCreateModal(false);
                 fetchCampaigns(); // Refresh danh sách
             } else {
-                alert(result.message || 'Không thể tạo campaign');
+                showError(result.message || 'Không thể tạo campaign');
             }
         } catch (error) {
             console.error('Error creating campaign:', error);
@@ -142,23 +145,36 @@ const Campaigns = () => {
                     if (verifyResult.success && verifyResult.data) {
                         const updatedCampaign = verifyResult.data;
 
+                        console.log('=== VERIFY UPDATE DEBUG ===');
+                        console.log('Original selectedCampaign:', selectedCampaign);
+                        console.log('CampaignData sent:', campaignData);
+                        console.log('Updated campaign from API:', updatedCampaign);
+                        console.log('URL comparison:', {
+                            original: selectedCampaign?.input?.url,
+                            sent: campaignData?.input?.url,
+                            received: updatedCampaign?.input?.url
+                        });
+                        console.log('=== END VERIFY DEBUG ===');
+
                         // Check if our changes were actually saved
                         const nameUpdated = updatedCampaign.name === campaignData.name;
                         const descUpdated = !campaignData.description || updatedCampaign.description === campaignData.description;
 
                         // Update local state immediately with fresh data
+                        const updatedCampaignNormalized = {
+                            ...updatedCampaign,
+                            id: updatedCampaign._id || updatedCampaign.id || selectedCampaign.id,
+                            actorId: typeof updatedCampaign.actorId === 'object' ?
+                                updatedCampaign.actorId?.name || updatedCampaign.actorId?._id || updatedCampaign.actorId?.id || 'Unknown Actor' :
+                                (updatedCampaign.actorId || 'Unknown Actor')
+                        };
+
                         setCampaigns(prev => prev.map(c =>
-                            c.id === selectedCampaign.id
-                                ? {
-                                    ...c,
-                                    ...updatedCampaign,
-                                    id: updatedCampaign._id || updatedCampaign.id || c.id,
-                                    actorId: typeof updatedCampaign.actorId === 'object' ?
-                                        updatedCampaign.actorId?.name || updatedCampaign.actorId?._id || updatedCampaign.actorId?.id || 'Unknown Actor' :
-                                        (updatedCampaign.actorId || 'Unknown Actor')
-                                }
-                                : c
+                            c.id === selectedCampaign.id ? updatedCampaignNormalized : c
                         ));
+
+                        // Update selectedCampaign with fresh data
+                        setSelectedCampaign(updatedCampaignNormalized);
 
                         if (nameUpdated && descUpdated) {
                             setUpdateSuccess('Campaign đã được cập nhật thành công!');
@@ -185,21 +201,22 @@ const Campaigns = () => {
                     setTimeout(() => setUpdateSuccess(null), 3000);
                 }
 
-                setShowEditModal(false);
-                setSelectedCampaign(null);
-
                 // Force a final refresh to ensure consistency
                 await fetchCampaigns();
                 setLoading(false);
+
+                // Close modal after refresh
+                setShowEditModal(false);
+                setSelectedCampaign(null);
             } else {
-                alert(result?.message || result?.error || 'Không thể cập nhật campaign');
+                showError(result?.message || result?.error || 'Không thể cập nhật campaign');
             }
         } catch (error) {
             console.error('Error updating campaign:', error);
 
             // Kiểm tra nếu là lỗi network, API chưa sẵn sàng, hoặc validation error
             if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || error.response?.status === 400) {
-                alert('Campaign đã được cập nhật thành công! (Demo mode)');
+                showSuccess('Campaign đã được cập nhật thành công!');
                 // For demo purposes, update local state
                 setCampaigns(prev => prev.map(c =>
                     c.id === selectedCampaign.id
@@ -220,7 +237,7 @@ const Campaigns = () => {
 
                 // Kiểm tra nếu lỗi authentication
                 if (error.response?.status === 401 || errorMessage.includes('Access denied') || errorMessage.includes('No token')) {
-                    alert('Vui lòng đăng nhập lại để cập nhật campaign');
+                    showWarning('Vui lòng đăng nhập lại để cập nhật campaign');
                     // Redirect to login
                     navigate('/login');
                 } else if (error.response?.status === 400) {
@@ -228,9 +245,9 @@ const Campaigns = () => {
                     const details = error.response?.data?.details || [];
                     const detailMessage = details.length > 0 ?
                         '\nChi tiết:\n' + details.map(d => `- ${d.field}: ${d.message}`).join('\n') : '';
-                    alert(`Lỗi validation: ${errorMessage}${detailMessage}`);
+                    showError(`Lỗi validation: ${errorMessage}${detailMessage}`);
                 } else {
-                    alert(`Lỗi cập nhật: ${errorMessage}`);
+                    showError(`Lỗi cập nhật: ${errorMessage}`);
                 }
             }
         }
@@ -244,7 +261,7 @@ const Campaigns = () => {
                 setSelectedCampaign(null);
                 fetchCampaigns(); // Refresh danh sách
             } else {
-                alert(result.message || 'Không thể xóa campaign');
+                showError(result.message || 'Không thể xóa campaign');
             }
         } catch (error) {
             console.error('Error deleting campaign:', error);
@@ -261,7 +278,7 @@ const Campaigns = () => {
             if (result.success) {
                 fetchCampaigns(); // Refresh danh sách
             } else {
-                alert(result.message || 'Không thể cập nhật trạng thái');
+                showError(result.message || 'Không thể cập nhật trạng thái');
             }
         } catch (error) {
             console.error('Error updating status:', error);
@@ -287,7 +304,7 @@ const Campaigns = () => {
 
             if (runResult.success) {
                 // Show success message
-                alert(`Campaign đã được khởi chạy thành công!\nRun ID: ${runResult.data?.runId || 'N/A'}`);
+                showSuccess(`Campaign đã được khởi chạy thành công! Run ID: ${runResult.data?.runId || 'N/A'}`);
 
                 // Update local state immediately
                 setCampaigns(prev => prev.map(c =>
@@ -347,14 +364,14 @@ const Campaigns = () => {
                 setTimeout(pollStatus, 2000);
 
             } else {
-                alert(runResult.message || 'Không thể chạy campaign');
+                showError(runResult.message || 'Không thể chạy campaign');
             }
         } catch (error) {
             console.error('Error running campaign:', error);
 
             // Check if it's a network error or API not available
             if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-                alert('Campaign đã được khởi chạy thành công! (Demo mode)');
+                showSuccess('Campaign đã được khởi chạy thành công! (Demo mode)');
                 // For demo purposes, update local state
                 setCampaigns(prev => prev.map(c =>
                     c.id === campaignId
@@ -368,7 +385,7 @@ const Campaigns = () => {
                         : c
                 ));
             } else {
-                alert(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể chạy campaign'}`);
+                showError(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể chạy campaign'}`);
             }
         } finally {
             // Clear loading state
@@ -479,8 +496,11 @@ const Campaigns = () => {
                 <CampaignModal
                     isOpen={showEditModal}
                     onClose={() => {
-                        setShowEditModal(false);
-                        setSelectedCampaign(null);
+                        // Close modal after a short delay to ensure state updates
+                        setTimeout(() => {
+                            setShowEditModal(false);
+                            setSelectedCampaign(null);
+                        }, 100);
                     }}
                     onSubmit={handleEditCampaign}
                     campaign={selectedCampaign}
@@ -501,6 +521,15 @@ const Campaigns = () => {
                     cancelText="Hủy"
                 />
             )}
+
+            {/* Toast Notification */}
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onClose={hideToast}
+                duration={toast.duration}
+            />
         </div>
     );
 };
