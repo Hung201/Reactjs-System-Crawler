@@ -2,8 +2,8 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { sourcesAPI } from '../../../services/api';
-import { DATA_TYPES, SOURCE_STATUS } from '../../../utils/constants';
+import { sourcesAPI } from '../../services/api';
+import { DATA_TYPES, SOURCE_STATUS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
 const SourceModal = ({ isOpen, onClose, source }) => {
@@ -46,7 +46,7 @@ const SourceModal = ({ isOpen, onClose, source }) => {
     },
     onError: (error) => {
       toast.error(
-        error.response?.data?.message || 
+        error.response?.data?.message ||
         (isEditing ? 'Không thể cập nhật nguồn crawl' : 'Không thể tạo nguồn crawl')
       );
     },
@@ -83,7 +83,7 @@ const SourceModal = ({ isOpen, onClose, source }) => {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div 
+        <div
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           onClick={handleClose}
         />
@@ -177,7 +177,7 @@ const SourceModal = ({ isOpen, onClose, source }) => {
                     <div key={index} className="flex items-center space-x-2">
                       <input
                         type="url"
-                        {...register(`startUrls.${index}`, { 
+                        {...register(`startUrls.${index}`, {
                           required: index === 0 ? 'Ít nhất một URL là bắt buộc' : false,
                           pattern: {
                             value: /^https?:\/\/.+/,

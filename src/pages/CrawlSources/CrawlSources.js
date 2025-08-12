@@ -4,7 +4,7 @@ import { Plus, Search, Filter, Play, Edit, Trash2, MoreVertical } from 'lucide-r
 import { sourcesAPI } from '../../services/api';
 import { SOURCE_STATUS_LABELS, DATA_TYPE_LABELS } from '../../utils/constants';
 import toast from 'react-hot-toast';
-import SourceModal from './components/SourceModal';
+import SourceModal from '../../components/SourceModal/SourceModal';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 
 const CrawlSources = () => {
@@ -90,7 +90,7 @@ const CrawlSources = () => {
   };
 
   const filteredSources = Array.isArray(sources?.data) ? sources.data : [];
-  
+
   console.log('CrawlSources - sources:', sources);
   console.log('CrawlSources - sources.data:', sources?.data);
   console.log('CrawlSources - filteredSources:', filteredSources);

@@ -59,17 +59,7 @@ class CampaignService {
     // Cập nhật campaign
     async updateCampaign(campaignId, campaignData) {
         try {
-            console.log('=== CAMPAIGN SERVICE DEBUG ===');
-            console.log('PUT URL:', `${this.baseURL}/campaigns/${campaignId}`);
-            console.log('Request Data:', JSON.stringify(campaignData, null, 2));
-            console.log('Headers:', { Authorization: this.token ? 'Bearer ***' : 'None' });
-            console.log('=== END SERVICE DEBUG ===');
-
             const response = await this.api.put(`/campaigns/${campaignId}`, campaignData);
-            console.log('=== BACKEND RESPONSE ===');
-            console.log('Response status:', response.status);
-            console.log('Response data:', response.data);
-            console.log('=== END RESPONSE ===');
             return response.data;
         } catch (error) {
             console.error('Error updating campaign:', error);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { ExternalLink, Eye } from 'lucide-react';
-import { DATA_TYPE_LABELS, DATA_STATUS_LABELS } from '../../../utils/constants';
+import { DATA_TYPE_LABELS, DATA_STATUS_LABELS } from '../../utils/constants';
 
 const RecentDataTable = ({ data, isLoading, error }) => {
   console.log('RecentDataTable - data:', data);
