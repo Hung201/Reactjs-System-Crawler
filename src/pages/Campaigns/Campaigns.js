@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CAMPAIGN_STATUS, CAMPAIGN_STATUS_LABELS } from '../../utils/constants';
-import CampaignModal from './components/CampaignModal';
+import CampaignModal from '../../components/CampaignModal/CampaignModal';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 import Toast from '../../components/Common/Toast';
 import { useToast } from '../../hooks/useToast';

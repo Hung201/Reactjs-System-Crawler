@@ -12,9 +12,9 @@ import {
 } from 'lucide-react';
 import { dashboardAPI } from '../../services/api';
 import { DATA_STATUS, SOURCE_STATUS } from '../../utils/constants';
-import StatCard from './components/StatCard';
-import RecentDataTable from './components/RecentDataTable';
-import ChartSection from './components/ChartSection';
+import StatCard from '../../components/Dashboard/StatCard';
+import RecentDataTable from '../../components/Dashboard/RecentDataTable';
+import ChartSection from '../../components/Dashboard/ChartSection';
 
 const Dashboard = () => {
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({

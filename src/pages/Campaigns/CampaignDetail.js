@@ -21,6 +21,7 @@ import SchemaTab from '../../components/CampaignDetail/tabs/SchemaTab';
 import DataTab from '../../components/CampaignDetail/tabs/DataTab';
 import RunsTab from '../../components/CampaignDetail/tabs/RunsTab';
 import SettingsTab from '../../components/CampaignDetail/tabs/SettingsTab';
+import ServerErrorAlert from '../../components/Common/ServerErrorAlert';
 
 const CampaignDetail = () => {
     const { id } = useParams();
@@ -33,6 +34,7 @@ const CampaignDetail = () => {
     const [crawledData, setCrawledData] = useState(null);
     const [pollingInterval, setPollingInterval] = useState(null);
     const [runHistory, setRunHistory] = useState([]);
+    const [isLoadingData, setIsLoadingData] = useState(false);
 
     const campaignService = new CampaignService(token);
 
@@ -118,60 +120,70 @@ const CampaignDetail = () => {
         }
     };
 
-    // Load crawled data from campaign API (check runHistory for latest output)
+    // Load crawled data from campaign API (prioritize status API for latest data)
     const loadCrawledData = async () => {
+        if (isLoadingData) {
+            console.log('⚠️ Already loading data, skipping...');
+            return;
+        }
+
         try {
+            setIsLoadingData(true);
             console.log('🔍 Loading crawled data for campaign:', id);
+
+            // First try status API for latest data
+            const statusResult = await campaignService.getCampaignStatus(id);
+            console.log('🔍 Status API response:', statusResult);
+
+            if (statusResult.success) {
+                // Check for data.result.output first (correct API structure)
+                if (statusResult.data?.result?.output && Array.isArray(statusResult.data.result.output)) {
+                    console.log('🔍 Found output data in status API result:', statusResult.data.result.output);
+                    console.log('🔍 Total products from status API:', statusResult.data.result.output.length);
+                    setCrawledData(statusResult.data.result.output);
+                    return;
+                }
+                // Check for data.output (fallback)
+                else if (statusResult.data?.output && Array.isArray(statusResult.data.output)) {
+                    console.log('🔍 Found output data in status API data:', statusResult.data.output);
+                    console.log('🔍 Total products from status API:', statusResult.data.output.length);
+                    setCrawledData(statusResult.data.output);
+                    return;
+                }
+                // Check for result.log and parse it
+                else if (statusResult.data?.result?.log) {
+                    console.log('🔍 Found log data, parsing products...');
+                    const logText = statusResult.data.result.log;
+                    const products = parseProductsFromLog(logText);
+                    console.log('🔍 Total products parsed from log:', products.length);
+                    setCrawledData(products);
+                    return;
+                }
+            }
+
+            // Fallback to campaign API runHistory
             const campaignResult = await campaignService.getCampaign(id);
             console.log('🔍 Campaign API response for crawled data:', campaignResult);
 
             if (campaignResult.success && campaignResult.data) {
-                // First check if there's output data in the latest run history
                 if (campaignResult.data.runHistory && campaignResult.data.runHistory.length > 0) {
                     const latestRun = campaignResult.data.runHistory[0]; // Most recent run
                     if (latestRun.output && Array.isArray(latestRun.output)) {
                         console.log('🔍 Found output data in latest run:', latestRun.output);
+                        console.log('🔍 Total products from runHistory:', latestRun.output.length);
                         setCrawledData(latestRun.output);
                         return;
                     }
                 }
-
-                // Fallback to status API
-                const statusResult = await campaignService.getCampaignStatus(id);
-                console.log('🔍 Status API response:', statusResult);
-
-                if (statusResult.success) {
-                    // Check for data.result.output first (correct API structure)
-                    if (statusResult.data?.result?.output) {
-                        console.log('🔍 Found output data in result:', statusResult.data.result.output);
-                        setCrawledData(statusResult.data.result.output);
-                    }
-                    // Check for data.output (fallback)
-                    else if (statusResult.data?.output) {
-                        console.log('🔍 Found output data in data:', statusResult.data.output);
-                        setCrawledData(statusResult.data.output);
-                    }
-                    // Check for result.log and parse it
-                    else if (statusResult.data?.result?.log) {
-                        console.log('🔍 Found log data, parsing products...');
-                        const logText = statusResult.data.result.log;
-                        const products = parseProductsFromLog(logText);
-                        setCrawledData(products);
-                    } else {
-                        console.log('🔍 No output or log data found');
-                        setCrawledData([]);
-                    }
-                } else {
-                    console.log('🔍 Status API call failed:', statusResult.message);
-                    setCrawledData([]);
-                }
-            } else {
-                console.log('🔍 Campaign API call failed:', campaignResult.message);
-                setCrawledData([]);
             }
+
+            console.log('🔍 No output or log data found');
+            setCrawledData([]);
         } catch (error) {
             console.error('Error loading crawled data:', error);
             setCrawledData([]);
+        } finally {
+            setIsLoadingData(false);
         }
     };
 
@@ -241,6 +253,17 @@ const CampaignDetail = () => {
         }
     }, [id]); // Only depend on id, not crawledData
 
+    // Auto-load data when campaign status changes to completed
+    useEffect(() => {
+        if (campaign && campaign.status === CAMPAIGN_STATUS.COMPLETED && !crawledData && !isRunning && !isLoadingData) {
+            console.log('🔄 Campaign completed, auto-loading data...');
+            // Use longer delay to avoid rate limiting
+            setTimeout(() => {
+                loadCrawledData();
+            }, 3000); // Wait 3 seconds for API to be ready
+        }
+    }, [campaign?.status, crawledData, isRunning, isLoadingData]);
+
     // Cleanup polling on unmount
     useEffect(() => {
         return () => {
@@ -287,12 +310,37 @@ const CampaignDetail = () => {
                                 setPollingInterval(null);
                                 setIsRunning(false);
 
-                                // Extract crawled data from output
-                                const output = statusResult.data?.output;
-                                if (output) {
-                                    console.log('Crawled data from output:', output);
-                                    setCrawledData(output);
+                                // Extract crawled data from output using the same logic as loadCrawledData
+                                let outputData = null;
+
+                                // Check for data.result.output first (correct API structure)
+                                if (statusResult.data?.result?.output && Array.isArray(statusResult.data.result.output)) {
+                                    outputData = statusResult.data.result.output;
+                                    console.log('✅ Found output data in result:', outputData);
+                                }
+                                // Check for data.output (fallback)
+                                else if (statusResult.data?.output && Array.isArray(statusResult.data.output)) {
+                                    outputData = statusResult.data.output;
+                                    console.log('✅ Found output data in data:', outputData);
+                                }
+                                // Check for result.log and parse it
+                                else if (statusResult.data?.result?.log) {
+                                    console.log('✅ Found log data, parsing products...');
+                                    const logText = statusResult.data.result.log;
+                                    outputData = parseProductsFromLog(logText);
+                                    console.log('✅ Parsed products from log:', outputData);
+                                }
+
+                                if (outputData) {
+                                    console.log('✅ Setting crawled data:', outputData.length, 'products');
+                                    setCrawledData(outputData);
                                     setActiveTab('data'); // Switch to data tab
+                                } else {
+                                    console.log('⚠️ No output data found, calling loadCrawledData...');
+                                    // Fallback: call loadCrawledData to get data from other sources
+                                    setTimeout(() => {
+                                        loadCrawledData();
+                                    }, 1000); // Small delay to ensure API is ready
                                 }
 
                                 // Update campaign stats
@@ -332,7 +380,7 @@ const CampaignDetail = () => {
                             message: 'Lỗi khi kiểm tra trạng thái'
                         }));
                     }
-                }, 2000); // Poll every 2 seconds
+                }, 5000); // Poll every 5 seconds (reduced frequency)
 
                 setPollingInterval(interval);
             } else {
@@ -345,9 +393,43 @@ const CampaignDetail = () => {
         } catch (error) {
             console.error('Error running campaign:', error);
             setIsRunning(false);
+
+            // Xử lý lỗi chi tiết hơn
+            let errorMessage = 'Lỗi kết nối server';
+
+            if (error.response) {
+                // Server trả về lỗi
+                const status = error.response.status;
+                const data = error.response.data;
+
+                switch (status) {
+                    case 400:
+                        errorMessage = data?.message || 'Dữ liệu không hợp lệ';
+                        break;
+                    case 401:
+                        errorMessage = 'Không có quyền thực hiện';
+                        break;
+                    case 404:
+                        errorMessage = 'Campaign không tồn tại';
+                        break;
+                    case 500:
+                        errorMessage = 'Lỗi server nội bộ';
+                        break;
+                    default:
+                        errorMessage = data?.message || `Lỗi server (${status})`;
+                }
+            } else if (error.request) {
+                // Không nhận được response
+                errorMessage = 'Không thể kết nối đến server';
+            } else {
+                // Lỗi khác
+                errorMessage = error.message || 'Lỗi không xác định';
+            }
+
             setRunStatus({
                 status: 'error',
-                message: 'Lỗi kết nối server'
+                message: errorMessage,
+                error: error
             });
         }
     };
@@ -447,7 +529,13 @@ const CampaignDetail = () => {
             </div>
 
             {/* Run Status */}
-            {runStatus && (
+            {runStatus && runStatus.status === 'error' ? (
+                <ServerErrorAlert
+                    error={runStatus.error}
+                    onRetry={handleRunCampaign}
+                    title="Lỗi chạy campaign"
+                />
+            ) : runStatus && (
                 <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-3">
                         {getRunStatusIcon(runStatus.status)}

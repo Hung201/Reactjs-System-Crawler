@@ -23,9 +23,8 @@ const StatCard = ({ title, value, change, changeType, icon: Icon, color }) => {
             ) : (
               <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
             )}
-            <span className={`text-sm font-medium ${
-              changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-            }`}>
+            <span className={`text-sm font-medium ${changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+              }`}>
               {change}
             </span>
             <span className="text-sm text-gray-500 ml-1">so với tháng trước</span>
