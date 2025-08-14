@@ -17,13 +17,15 @@ export const USER_ROLE_LABELS = {
 export const DATA_TYPES = {
   PRODUCT: 'product',
   NEWS: 'news',
-  VIDEO: 'video',
+  BLOG: 'blog',
+  CUSTOM: 'custom',
 };
 
 export const DATA_TYPE_LABELS = {
   [DATA_TYPES.PRODUCT]: 'Sản phẩm',
   [DATA_TYPES.NEWS]: 'Tin tức',
-  [DATA_TYPES.VIDEO]: 'Video',
+  [DATA_TYPES.BLOG]: 'Blog',
+  [DATA_TYPES.CUSTOM]: 'Tùy chỉnh',
 };
 
 // Source Status
@@ -154,6 +156,12 @@ export const NAV_ITEMS = [
     path: '/campaigns',
     label: 'Chiến dịch',
     icon: 'Target',
+    roles: [USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR],
+  },
+  {
+    path: '/integrations',
+    label: 'Integrations',
+    icon: 'Settings',
     roles: [USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR],
   },
   {

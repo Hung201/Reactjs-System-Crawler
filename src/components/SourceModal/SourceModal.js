@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Globe, Database, Code, Target, CheckCircle } from 'lucide-react';
 import { sourcesAPI } from '../../services/api';
 import { DATA_TYPES, SOURCE_STATUS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
-const SourceModal = ({ isOpen, onClose, source }) => {
+const SourceModal = ({ isOpen, onClose, source, template }) => {
   const queryClient = useQueryClient();
   const isEditing = !!source;
+  const isFromTemplate = !!template;
 
   const {
     register,
@@ -25,10 +26,27 @@ const SourceModal = ({ isOpen, onClose, source }) => {
       startUrls: source?.startUrls || [''],
       actorId: source?.actorId || '',
       schedule: source?.schedule || '',
+      // Template fields
+      templateId: template?.id || '',
+      urlPattern: template?.urlPattern || '',
+      defaultSelectors: template?.defaultSelectors || {},
     },
   });
 
   const startUrls = watch('startUrls');
+  const selectedType = watch('type');
+
+  // Auto-fill form when template is selected
+  useEffect(() => {
+    if (template && !isEditing) {
+      setValue('name', `${template.name} - ${new Date().toLocaleDateString('vi-VN')}`);
+      setValue('type', template.type);
+      setValue('templateId', template.id);
+      setValue('urlPattern', template.urlPattern);
+      setValue('defaultSelectors', template.defaultSelectors);
+      setValue('actorId', `actor-${template.id}-scraper`);
+    }
+  }, [template, setValue, isEditing]);
 
   const mutation = useMutation({
     mutationFn: (data) => {
@@ -77,6 +95,21 @@ const SourceModal = ({ isOpen, onClose, source }) => {
     }
   };
 
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'blog':
+        return <Globe className="w-4 h-4" />;
+      case 'product':
+        return <Database className="w-4 h-4" />;
+      case 'news':
+        return <Target className="w-4 h-4" />;
+      case 'custom':
+        return <Code className="w-4 h-4" />;
+      default:
+        return <Globe className="w-4 h-4" />;
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -102,6 +135,32 @@ const SourceModal = ({ isOpen, onClose, source }) => {
                 <X size={24} />
               </button>
             </div>
+
+            {/* Template Info */}
+            {isFromTemplate && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="text-blue-600">
+                    {getTypeIcon(template.type)}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-blue-900">
+                      Sử dụng template: {template.name}
+                    </h4>
+                    <p className="text-xs text-blue-700 mt-1">
+                      {template.description}
+                    </p>
+                    <div className="flex items-center space-x-4 mt-2 text-xs text-blue-600">
+                      <span className="flex items-center space-x-1">
+                        <CheckCircle size={12} />
+                        <span>Success Rate: {template.successRate}%</span>
+                      </span>
+                      <span>Pattern: {template.urlPattern}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Basic Information */}
@@ -129,9 +188,10 @@ const SourceModal = ({ isOpen, onClose, source }) => {
                     {...register('type', { required: 'Loại dữ liệu là bắt buộc' })}
                     className={`input-field ${errors.type ? 'border-red-500' : ''}`}
                   >
-                    <option value={DATA_TYPES.PRODUCT}>Sản phẩm</option>
-                    <option value={DATA_TYPES.NEWS}>Tin tức</option>
-                    <option value={DATA_TYPES.VIDEO}>Video</option>
+                    <option value="product">Sản phẩm</option>
+                    <option value="news">Tin tức</option>
+                    <option value="blog">Blog</option>
+                    <option value="custom">Tùy chỉnh</option>
                   </select>
                   {errors.type && (
                     <p className="mt-1 text-sm text-red-600">{errors.type.message}</p>
@@ -148,9 +208,9 @@ const SourceModal = ({ isOpen, onClose, source }) => {
                     {...register('status')}
                     className="input-field"
                   >
-                    <option value={SOURCE_STATUS.ACTIVE}>Hoạt động</option>
-                    <option value={SOURCE_STATUS.INACTIVE}>Tạm dừng</option>
-                    <option value={SOURCE_STATUS.ARCHIVED}>Đã lưu trữ</option>
+                    <option value="active">Hoạt động</option>
+                    <option value="inactive">Tạm dừng</option>
+                    <option value="archived">Đã lưu trữ</option>
                   </select>
                 </div>
 
@@ -208,6 +268,28 @@ const SourceModal = ({ isOpen, onClose, source }) => {
                   </button>
                 </div>
               </div>
+
+              {/* Template Selectors Preview */}
+              {isFromTemplate && template.defaultSelectors && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Selectors từ template
+                  </label>
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                      {Object.entries(template.defaultSelectors).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="font-medium text-gray-600">{key}:</span>
+                          <span className="text-gray-800 font-mono">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Các selectors này sẽ được sử dụng trong chiến dịch khi tạo từ template này.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Schedule */}
               <div>

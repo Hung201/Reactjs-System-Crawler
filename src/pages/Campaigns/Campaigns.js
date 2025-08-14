@@ -260,6 +260,7 @@ const Campaigns = () => {
                 setShowDeleteModal(false);
                 setSelectedCampaign(null);
                 fetchCampaigns(); // Refresh danh sách
+                showSuccess(`Chiến dịch "${selectedCampaign.name}" đã được xóa thành công!`);
             } else {
                 showError(result.message || 'Không thể xóa campaign');
             }
@@ -269,6 +270,7 @@ const Campaigns = () => {
             setCampaigns(prev => prev.filter(c => c.id !== selectedCampaign.id));
             setShowDeleteModal(false);
             setSelectedCampaign(null);
+            showSuccess(`Chiến dịch "${selectedCampaign.name}" đã được xóa thành công!`);
         }
     };
 

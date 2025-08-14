@@ -551,12 +551,12 @@ const CampaignDetail = () => {
                 </div>
             )}
 
-            {/* Status Badge */}
-            <div className="mb-6">
+            {/* Status Badge - Removed as requested */}
+            {/* <div className="mb-6">
                 <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(campaign.status)}`}>
                     {CAMPAIGN_STATUS_LABELS[campaign.status]}
                 </span>
-            </div>
+            </div> */}
 
             {/* Stats Cards */}
             <StatsCards campaign={campaign} />

@@ -17,6 +17,7 @@ import RunLog from './pages/ActorEditor/RunLog';
 import RunLogs from './pages/RunLogs/RunLogs';
 import Campaigns from './pages/Campaigns/Campaigns';
 import CampaignDetail from './pages/Campaigns/CampaignDetail';
+import Integrations from './pages/Integrations/Integrations';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
             <Route path="actors/new" element={<NewActorEditor />} />
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="campaigns/:id" element={<CampaignDetail />} />
+            <Route path="integrations" element={<Integrations />} />
             <Route path="logs" element={<RunLogs />} />
           </Route>
         </Routes>

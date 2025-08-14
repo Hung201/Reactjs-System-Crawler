@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     RefreshCw,
     Download,
     Play,
-    FileText
+    FileText,
+    Eye,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 
 const DataTab = ({
@@ -17,6 +20,57 @@ const DataTab = ({
     handleRunCampaign,
     isRunning
 }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(20);
+
+    // Tính toán phân trang
+    const totalItems = Array.isArray(crawledData) ? crawledData.length : 0;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentData = Array.isArray(crawledData) ? crawledData.slice(startIndex, endIndex) : [];
+
+    // Xử lý thay đổi trang
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    // Tạo danh sách các trang để hiển thị
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisiblePages = 5;
+
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) {
+                    pages.push(i);
+                }
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1);
+                pages.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                pages.push(1);
+                pages.push('...');
+                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    pages.push(i);
+                }
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+
+        return pages;
+    };
+
     return (
         <div>
             <div className="flex items-center justify-between mb-4">
@@ -127,67 +181,108 @@ const DataTab = ({
                 <div className="space-y-4">
                     {Array.isArray(crawledData) ? (
                         <div>
-                            <p className="text-sm text-gray-600 mb-4">
-                                Tổng cộng {crawledData.length} sản phẩm được thu thập
-                            </p>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                                {crawledData.map((item, index) => (
-                                    <div key={index} className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
-                                        {/* Product Image */}
-                                        {item.images && item.images.length > 0 && (
-                                            <div className="mb-2">
-                                                <img
-                                                    src={item.images[0]}
-                                                    alt={item.name}
-                                                    className="w-full h-24 object-cover rounded-md"
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
+                            <div className="flex items-center justify-between mb-4">
+                                <p className="text-sm text-gray-600">
+                                    Tổng cộng {crawledData.length} sản phẩm được thu thập
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    Hiển thị {startIndex + 1}-{Math.min(endIndex, totalItems)} của {totalItems} sản phẩm
+                                </p>
+                            </div>
 
-                                        {/* Product Info */}
-                                        <h4 className="font-medium text-gray-900 mb-1 line-clamp-2 text-sm">
-                                            {item.name || `Sản phẩm ${index + 1}`}
-                                        </h4>
+                            {/* Log List */}
+                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                {currentData.map((item, index) => (
+                                    <div
+                                        key={startIndex + index}
+                                        className={`flex items-center justify-between p-3 hover:bg-gray-50 transition-colors ${index !== currentData.length - 1 ? 'border-b border-gray-200'
+                                            : ''}`}
+                                    >
+                                        {/* SKU */}
+                                        <div className="w-48 flex-shrink-0">
+                                            <span className="text-xs font-mono text-gray-600">
+                                                {item.sku || `SKU: DAISANB2B_G_${String(startIndex + index + 1).padStart(8, '0')}`}
+                                            </span>
+                                        </div>
 
-                                        {item.price && (
-                                            <p className="text-green-600 font-semibold mb-1 text-sm">
-                                                {item.price}
-                                            </p>
-                                        )}
+                                        {/* Product Name */}
+                                        <div className="flex-1 min-w-0 px-4">
+                                            <h3 className="text-sm font-medium text-gray-900 truncate">
+                                                {item.title || `Sản phẩm ${startIndex + index + 1}`}
+                                            </h3>
+                                        </div>
 
-                                        {item.sku && (
-                                            <p className="text-xs text-gray-500 mb-2">
-                                                SKU: {item.sku}
-                                            </p>
-                                        )}
+                                        {/* Price */}
+                                        <div className="w-24 flex-shrink-0 text-right">
+                                            <span className="text-sm font-medium text-green-600">
+                                                {item.price || 'N/A'}
+                                            </span>
+                                        </div>
 
-                                        {/* Action Buttons */}
-                                        <div className="flex gap-1 mt-2">
+                                        {/* Actions */}
+                                        <div className="w-16 flex-shrink-0 flex items-center justify-end space-x-1">
                                             {item.url && (
                                                 <a
                                                     href={item.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:text-blue-800 text-xs flex-1 text-center py-1 px-1 border border-blue-300 rounded hover:bg-blue-50"
+                                                    className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+                                                    title="Xem chi tiết"
                                                 >
-                                                    Chi tiết
+                                                    <Eye size={14} />
                                                 </a>
-                                            )}
-                                            {item.images && item.images.length > 1 && (
-                                                <button
-                                                    className="text-gray-600 hover:text-gray-800 text-xs py-1 px-1 border border-gray-300 rounded hover:bg-gray-50"
-                                                    title={`${item.images.length} ảnh`}
-                                                >
-                                                    +{item.images.length - 1}
-                                                </button>
                                             )}
                                         </div>
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between mt-4">
+                                    <div className="flex items-center space-x-2">
+                                        <button
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            disabled={currentPage === 1}
+                                            className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <ChevronLeft size={16} />
+                                            Trước
+                                        </button>
+
+                                        <div className="flex items-center space-x-1">
+                                            {getPageNumbers().map((page, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => typeof page === 'number' && handlePageChange(page)}
+                                                    disabled={page === '...'}
+                                                    className={`px-3 py-2 text-sm font-medium rounded-md ${page === currentPage
+                                                        ? 'bg-blue-600 text-white'
+                                                        : page === '...'
+                                                            ? 'text-gray-400 cursor-default'
+                                                            : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            disabled={currentPage === totalPages}
+                                            className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Sau
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
+
+                                    <div className="text-sm text-gray-500">
+                                        Trang {currentPage} của {totalPages}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="bg-gray-50 rounded-lg p-4">

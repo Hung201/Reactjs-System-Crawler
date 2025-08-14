@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  Target
+  Target,
+  Settings
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { NAV_ITEMS } from '../../utils/constants';
@@ -36,6 +37,7 @@ const Sidebar = () => {
       Code,
       FileText,
       Target,
+      Settings,
     };
     return icons[iconName] || Home;
   };

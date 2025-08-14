@@ -1,25 +1,59 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { actorsAPI } from '../../services/api';
+import { actorsAPI, templatesAPI } from '../../services/api';
 import { CAMPAIGN_STATUS } from '../../utils/constants';
 
 const useCampaignForm = (campaign, isOpen) => {
     const { token } = useAuthStore();
     const [actors, setActors] = useState([]);
     const [loadingActors, setLoadingActors] = useState(false);
+    const [templates, setTemplates] = useState([]);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
     const isEditMode = Boolean(campaign);
+
+    // Create default schema with all fields
+    const createDefaultSchema = () => ({
+        title: 'Multi-Website Product Crawler',
+        type: 'object',
+        schemaVersion: 1,
+        properties: {
+            url: { default: '' },
+            websiteName: { default: '' },
+            paginationPattern: { default: '?page=' },
+            pageStart: { default: 1 },
+            pageEnd: { default: 5 },
+            productLinkSelector: { default: '.list-item-img a' },
+            titleClass: { default: '.product-detail_title h1' },
+            priceClass: { default: '.price' },
+            skuClass: { default: '' },
+            descriptionClass: { default: '.product-attribute' },
+            contentClass: { default: '.description-info' },
+            thumbnailClass: { default: '.image-slider-item img' },
+            imagesClass: { default: '.thumb-slider .swiper-container .swiper-wrapper .swiper-slide' },
+            productLinkIncludePatterns: { default: [] },
+            productLinkExcludePatterns: { default: [] },
+            includePatterns: { default: [] },
+            excludePatterns: { default: [] },
+            category: { default: '' },
+            supplier: { default: '' },
+            url_supplier: { default: '' },
+            maxProductLinks: { default: 50 },
+            maxRequestsPerCrawl: { default: 50000 },
+            isPrice: { default: true },
+            isThumbnail: { default: true },
+            autoGenerateSku: { default: true },
+            skuInImage: { default: false },
+            isBrowser: { default: false }
+        }
+    });
 
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         status: CAMPAIGN_STATUS.DRAFT,
         actorId: '',
-        input_schema: {
-            title: 'Multi-Website Product Crawler',
-            type: 'object',
-            schemaVersion: 1,
-            properties: {}
-        }
+        selectedTemplate: '',
+        input_schema: createDefaultSchema()
     });
 
     const [inputMode, setInputMode] = useState('manual');
@@ -27,9 +61,8 @@ const useCampaignForm = (campaign, isOpen) => {
     const [collapsedSections, setCollapsedSections] = useState({
         pagination: false,
         selectors: false,
-        arrays: false,
-        productData: false,
-        images: false,
+        productPatterns: false,
+        imagePatterns: false,
         settings: false
     });
 
@@ -73,6 +106,32 @@ const useCampaignForm = (campaign, isOpen) => {
         }
     };
 
+    // Fetch templates from API (only for create mode)
+    const fetchTemplates = async () => {
+        if (isEditMode) return;
+
+        try {
+            setLoadingTemplates(true);
+            const response = await templatesAPI.getAll();
+
+            console.log('🔍 Templates API response:', response);
+
+            if (response.data?.data && Array.isArray(response.data.data)) {
+                setTemplates(response.data.data);
+            } else if (response.data && Array.isArray(response.data)) {
+                setTemplates(response.data);
+            } else {
+                console.log('No templates found or unexpected API format');
+                setTemplates([]);
+            }
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+            setTemplates([]);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
     // Helper functions
     const getSchemaValue = (field, defaultValue = '') => {
         return formData.input_schema?.properties?.[field]?.default ?? defaultValue;
@@ -93,6 +152,50 @@ const useCampaignForm = (campaign, isOpen) => {
             ...prev,
             [field]: value
         }));
+    };
+
+    // Handle template selection
+    const handleTemplateChange = (templateId) => {
+        if (!templateId) {
+            // Reset to default schema if no template selected
+            setFormData(prev => ({
+                ...prev,
+                selectedTemplate: '',
+                actorId: '', // Reset actorId when template is cleared
+                input_schema: createDefaultSchema()
+            }));
+            return;
+        }
+
+        const selectedTemplate = templates.find(t => t._id === templateId);
+        if (selectedTemplate && selectedTemplate.input) {
+            // Convert template.input to input_schema format
+            const templateSchema = {
+                title: selectedTemplate.name || 'Template Schema',
+                type: 'object',
+                schemaVersion: 1,
+                properties: {}
+            };
+
+            // Map template.input to input_schema.properties format
+            Object.entries(selectedTemplate.input).forEach(([key, value]) => {
+                templateSchema.properties[key] = {
+                    title: key.charAt(0).toUpperCase() + key.slice(1),
+                    type: typeof value === 'number' ? 'integer' : typeof value === 'boolean' ? 'boolean' : Array.isArray(value) ? 'array' : 'string',
+                    default: value
+                };
+            });
+
+            // Set actorId from template if available
+            const templateActorId = selectedTemplate.actorId?.id || selectedTemplate.actorId?._id || '';
+
+            setFormData(prev => ({
+                ...prev,
+                selectedTemplate: templateId,
+                actorId: templateActorId, // Auto-set actorId from template
+                input_schema: templateSchema
+            }));
+        }
     };
 
     const handleSchemaChange = (field, value) => {
@@ -205,6 +308,7 @@ const useCampaignForm = (campaign, isOpen) => {
     useEffect(() => {
         if (isOpen && !isEditMode) {
             fetchActors();
+            fetchTemplates();
         }
     }, [isOpen, isEditMode, token]);
 
@@ -212,7 +316,8 @@ const useCampaignForm = (campaign, isOpen) => {
         if (isOpen && !campaign) {
             setFormData(prev => ({
                 ...prev,
-                actorId: ''
+                actorId: '',
+                selectedTemplate: ''
             }));
         }
     }, [isOpen, campaign]);
@@ -264,12 +369,8 @@ const useCampaignForm = (campaign, isOpen) => {
                 description: '',
                 status: CAMPAIGN_STATUS.DRAFT,
                 actorId: '',
-                input_schema: {
-                    title: 'Multi-Website Product Crawler',
-                    type: 'object',
-                    schemaVersion: 1,
-                    properties: {}
-                }
+                selectedTemplate: '',
+                input_schema: createDefaultSchema()
             });
             setJsonInput('');
         }
@@ -284,10 +385,13 @@ const useCampaignForm = (campaign, isOpen) => {
         collapsedSections,
         actors,
         loadingActors,
+        templates,
+        loadingTemplates,
         isEditMode,
 
         // Handlers
         handleInputChange,
+        handleTemplateChange,
         handleSchemaChange,
         handleJsonInputChange,
         handleArrayChange,

@@ -16,10 +16,13 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
         collapsedSections,
         actors,
         loadingActors,
+        templates,
+        loadingTemplates,
         isEditMode,
 
         // Handlers
         handleInputChange,
+        handleTemplateChange,
         handleSchemaChange,
         handleJsonInputChange,
         handleArrayChange,
@@ -175,10 +178,13 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
                             <BasicInfoTab
                                 formData={formData}
                                 handleInputChange={handleInputChange}
+                                handleTemplateChange={handleTemplateChange}
                                 getActorIdString={getActorIdString}
                                 isEditMode={isEditMode}
                                 actors={actors}
                                 loadingActors={loadingActors}
+                                templates={templates}
+                                loadingTemplates={loadingTemplates}
                             />
                         )}
 
@@ -195,6 +201,8 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
                                 handleArrayChange={handleArrayChange}
                                 addArrayItem={addArrayItem}
                                 removeArrayItem={removeArrayItem}
+                                formData={formData}
+                                templates={templates}
                             />
                         )}
                     </div>

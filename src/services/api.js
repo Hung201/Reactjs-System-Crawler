@@ -136,4 +136,222 @@ export const campaignsAPI = {
     getRuns: (id) => api.get(`/campaigns/${id}/runs`),
 };
 
+// Templates API
+export const templatesAPI = {
+    // Lấy danh sách templates
+    getAll: async (params = {}) => {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params.search) queryParams.append('search', params.search);
+            if (params.status) queryParams.append('status', params.status);
+            if (params.category) queryParams.append('category', params.category);
+            if (params.page) queryParams.append('page', params.page);
+            if (params.limit) queryParams.append('limit', params.limit);
+
+            const response = await api.get(`/templates?${queryParams.toString()}`);
+            return response.data;
+        } catch (error) {
+            console.error('Templates API error:', error);
+            throw error;
+        }
+    },
+
+    // Lấy template theo ID
+    getById: async (id) => {
+        try {
+            const response = await api.get(`/templates/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error('Template API error:', error);
+            throw error;
+        }
+    },
+
+    // Lấy danh sách actors có sẵn
+    getActors: async () => {
+        try {
+            const response = await api.get('/templates/actors');
+            return response.data;
+        } catch (error) {
+            console.error('Get actors API error:', error);
+            throw error;
+        }
+    },
+
+    // Lấy schema của actor
+    getActorSchema: async (actorId) => {
+        try {
+            const response = await api.get(`/templates/actors/${actorId}/schema`);
+            return response.data;
+        } catch (error) {
+            console.error('Get actor schema API error:', error);
+            throw error;
+        }
+    },
+
+    // Tạo template từ actor
+    createFromActor: async (templateData) => {
+        try {
+            const response = await api.post('/templates/from-actor', templateData);
+            return response.data;
+        } catch (error) {
+            console.error('Create template from actor API error:', error);
+            throw error;
+        }
+    },
+
+    // Tạo template mới (legacy)
+    create: async (templateData) => {
+        try {
+            const response = await api.post('/templates', templateData);
+            return response.data;
+        } catch (error) {
+            console.error('Create template API error:', error);
+            throw error;
+        }
+    },
+
+    // Cập nhật template
+    update: async (id, templateData) => {
+        try {
+            const response = await api.put(`/templates/${id}`, templateData);
+            return response.data;
+        } catch (error) {
+            console.error('Update template API error:', error);
+            throw error;
+        }
+    },
+
+    // Xóa template
+    delete: async (id) => {
+        try {
+            const response = await api.delete(`/templates/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error('Delete template API error:', error);
+            throw error;
+        }
+    },
+
+    // Sử dụng template để tạo source
+    useTemplate: async (templateId, sourceData) => {
+        try {
+            const response = await api.post(`/templates/${templateId}/use`, sourceData);
+            return response.data;
+        } catch (error) {
+            console.error('Use template API error:', error);
+            throw error;
+        }
+    }
+};
+
+// Platforms API
+export const platformsAPI = {
+    // Lấy danh sách platforms
+    getAll: async (params = {}) => {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params.search) queryParams.append('search', params.search);
+            if (params.type) queryParams.append('type', params.type);
+            if (params.isActive !== undefined) queryParams.append('isActive', params.isActive);
+            if (params.page) queryParams.append('page', params.page);
+            if (params.limit) queryParams.append('limit', params.limit);
+
+            const response = await api.get(`/platforms?${queryParams.toString()}`);
+            return response.data;
+        } catch (error) {
+            console.error('Platforms API error:', error);
+            throw error;
+        }
+    },
+
+    // Lấy platform theo ID
+    getById: async (id) => {
+        try {
+            const response = await api.get(`/platforms/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error('Platform API error:', error);
+            throw error;
+        }
+    },
+
+    // Tạo platform mới
+    create: async (platformData) => {
+        try {
+            const response = await api.post('/platforms', platformData);
+            return response.data;
+        } catch (error) {
+            console.error('Create platform API error:', error);
+            throw error;
+        }
+    },
+
+    // Cập nhật platform
+    update: async (id, platformData) => {
+        try {
+            const response = await api.put(`/platforms/${id}`, platformData);
+            return response.data;
+        } catch (error) {
+            console.error('Update platform API error:', error);
+            throw error;
+        }
+    },
+
+    // Xóa platform
+    delete: async (id) => {
+        try {
+            const response = await api.delete(`/platforms/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error('Delete platform API error:', error);
+            throw error;
+        }
+    },
+
+    // Test connection platform
+    testConnection: async (id) => {
+        try {
+            const response = await api.post(`/platforms/${id}/test`);
+            return response.data;
+        } catch (error) {
+            console.error('Test platform connection API error:', error);
+            throw error;
+        }
+    },
+
+    // Test tất cả platforms
+    testAllConnections: async () => {
+        try {
+            const response = await api.post('/platforms/test-all');
+            return response.data;
+        } catch (error) {
+            console.error('Test all platforms API error:', error);
+            throw error;
+        }
+    },
+
+    // Lấy thống kê platforms
+    getStats: async () => {
+        try {
+            const response = await api.get('/platforms/stats/overview');
+            return response.data;
+        } catch (error) {
+            console.error('Platform stats API error:', error);
+            throw error;
+        }
+    },
+
+    // Lấy danh sách loại platform
+    getAvailableTypes: async () => {
+        try {
+            const response = await api.get('/platforms/types/available');
+            return response.data;
+        } catch (error) {
+            console.error('Platform types API error:', error);
+            throw error;
+        }
+    }
+};
+
 export default api; 
