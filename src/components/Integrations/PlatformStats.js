@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Users, Activity, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { platformsAPI } from '../../../services/api';
+import { platformsAPI } from '../../services/api';
 import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
 
@@ -24,7 +24,8 @@ const PlatformStats = () => {
             setError(null);
             const response = await platformsAPI.getStats();
             if (response.success) {
-                setStats(response.data);
+                // Lấy dữ liệu thống kê từ response.statistics
+                setStats(response.statistics || response.data);
             }
         } catch (error) {
             console.error('Error loading platform stats:', error);
@@ -88,31 +89,31 @@ const PlatformStats = () => {
     ];
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-gray-900">Thống kê Platforms</h3>
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4 sm:p-6 overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Thống kê Platforms</h3>
                 <button
                     onClick={loadStats}
-                    className="text-sm text-blue-600 hover:text-blue-800"
+                    className="text-sm text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors"
                 >
                     Làm mới
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {statCards.map((stat, index) => {
                     const IconComponent = stat.icon;
                     return (
-                        <div key={index} className="bg-gray-50 rounded-lg p-4">
+                        <div key={index} className="bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-lg p-3 border border-gray-200/50 hover:shadow-sm transition-all duration-200">
                             <div className="flex items-center">
-                                <div className={`p-2 rounded-lg ${stat.color} bg-opacity-10`}>
+                                <div className={`p-2 rounded-lg ${stat.color} bg-opacity-10 shadow-sm`}>
                                     <IconComponent className={`h-5 w-5 ${stat.textColor}`} />
                                 </div>
-                                <div className="ml-3">
-                                    <p className="text-sm font-medium text-gray-900">
+                                <div className="ml-2 flex-1 min-w-0">
+                                    <p className="text-lg font-bold text-gray-900 truncate">
                                         {stat.value}
                                     </p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-600 truncate">
                                         {stat.title}
                                     </p>
                                 </div>
@@ -122,14 +123,14 @@ const PlatformStats = () => {
                 })}
             </div>
 
-            {stats.platformTypes && (
-                <div className="mt-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Phân bố theo loại</h4>
-                    <div className="space-y-2">
+            {stats.platformTypes && Object.keys(stats.platformTypes).length > 0 && (
+                <div className="mt-4">
+                    <h4 className="text-sm font-bold text-gray-900 mb-2">Phân bố theo loại</h4>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
                         {Object.entries(stats.platformTypes).map(([type, count]) => (
-                            <div key={type} className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600 capitalize">{type}</span>
-                                <span className="text-sm font-medium text-gray-900">
+                            <div key={type} className="flex items-center justify-between p-2 bg-gray-50/50 rounded-lg">
+                                <span className="text-xs text-gray-600 capitalize font-medium">{type}</span>
+                                <span className="text-xs font-bold text-gray-900">
                                     {typeof count === 'object' ? (count.value || count.count || 0) : count}
                                 </span>
                             </div>

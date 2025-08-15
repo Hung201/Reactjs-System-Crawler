@@ -290,10 +290,31 @@ export const platformsAPI = {
     // Cập nhật platform
     update: async (id, platformData) => {
         try {
-            const response = await api.put(`/platforms/${id}`, platformData);
-            return response.data;
+            console.log('=== PLATFORM UPDATE API CALL ===');
+            console.log('URL:', `/platforms/${id}`);
+            console.log('Method: PUT');
+            console.log('Data:', platformData);
+
+            // Try PUT first
+            try {
+                const response = await api.put(`/platforms/${id}`, platformData);
+                console.log('Update API response (PUT):', response.data);
+                return response.data;
+            } catch (putError) {
+                console.log('PUT failed, trying POST with _method override...');
+
+                // Fallback: Use POST with _method override if PUT is not supported
+                const response = await api.post(`/platforms/${id}`, {
+                    ...platformData,
+                    _method: 'PUT'
+                });
+                console.log('Update API response (POST with _method):', response.data);
+                return response.data;
+            }
         } catch (error) {
             console.error('Update platform API error:', error);
+            console.error('Error response:', error.response?.data);
+            console.error('Error status:', error.response?.status);
             throw error;
         }
     },
@@ -334,7 +355,7 @@ export const platformsAPI = {
     // Lấy thống kê platforms
     getStats: async () => {
         try {
-            const response = await api.get('/platforms/stats/overview');
+            const response = await api.get('/platforms?includeStats=true');
             return response.data;
         } catch (error) {
             console.error('Platform stats API error:', error);
