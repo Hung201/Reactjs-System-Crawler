@@ -1,0 +1,37 @@
+[33m452a487[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: filter-branch: rewrite
+[33mb538fe4[m HEAD@{1}: commit: Remove hardcoded API token, use environment variables
+[33m119981b[m HEAD@{2}: commit: add interface runs and build apify
+[33m8de5ca6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{3}: filter-branch: rewrite
+[33mdb75891[m HEAD@{4}: commit: add api apify input_schema to interface (removed .env)
+[33mb5c46ea[m HEAD@{5}: commit: add api apify input_schema to interface
+[33m48166e5[m HEAD@{6}: Branch: renamed refs/heads/clean-main to refs/heads/main
+[33m48166e5[m HEAD@{8}: commit: Clean repository - remove sensitive data and restore current code
+[33mc9218a1[m HEAD@{9}: checkout: moving from c9218a1b0c752cdf828eefc3ac70a318167ef136 to clean-main
+[33mc9218a1[m HEAD@{10}: checkout: moving from main to c9218a1
+[33m48ae85d[m HEAD@{11}: checkout: moving from backup-current-code to main
+[33m48ae85d[m HEAD@{12}: checkout: moving from main to backup-current-code
+[33m48ae85d[m HEAD@{13}: rebase (abort): returning to refs/heads/main
+[33m48ae85d[m HEAD@{14}: rebase (abort): returning to refs/heads/main
+[33m82ef48a[m HEAD@{15}: commit: first hung
+[33md87318b[m HEAD@{16}: checkout: moving from hung to main
+[33m3b8d93e[m[33m ([m[1;31morigin/hung[m[33m)[m HEAD@{17}: checkout: moving from main to hung
+[33md87318b[m HEAD@{18}: checkout: moving from hung to main
+[33m3b8d93e[m[33m ([m[1;31morigin/hung[m[33m)[m HEAD@{19}: checkout: moving from main to hung
+[33md87318b[m HEAD@{20}: commit: fix add template and platform
+[33m69256ee[m HEAD@{21}: reset: moving to 69256ee
+[33m3b8d93e[m[33m ([m[1;31morigin/hung[m[33m)[m HEAD@{22}: checkout: moving from hung to main
+[33m3b8d93e[m[33m ([m[1;31morigin/hung[m[33m)[m HEAD@{23}: checkout: moving from main to hung
+[33m3b8d93e[m[33m ([m[1;31morigin/hung[m[33m)[m HEAD@{24}: commit: Add integrations safely - no tokens
+[33mc9218a1[m HEAD@{25}: reset: moving to HEAD~2
+[33m48ae85d[m HEAD@{26}: commit (amend): fix
+[33m69256ee[m HEAD@{27}: commit: fix
+[33mbeea60e[m HEAD@{28}: commit: add template and platform
+[33mc9218a1[m HEAD@{29}: commit: slice file
+[33m3e34984[m HEAD@{30}: commit: fix update campaign
+[33m8a07e48[m HEAD@{31}: commit: integrate api history and stats campaign, slice file campaign
+[33med481a1[m HEAD@{32}: commit: add campaign
+[33md490367[m HEAD@{33}: commit: add theme edit actor
+[33m861bf98[m HEAD@{34}: commit: add api crud user and pagination user
+[33m57593bf[m HEAD@{35}: commit: connect db
+[33m5b31dd3[m HEAD@{36}: Branch: renamed refs/heads/master to refs/heads/main
+[33m5b31dd3[m HEAD@{38}: commit (initial): first commit
