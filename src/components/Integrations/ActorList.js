@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Play, Download, Search, Filter, Code, Calendar, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ActorList = ({ actors, loading, platform, onRunActor, onImportActor }) => {
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [sortBy, setSortBy] = useState('name');
@@ -171,7 +173,11 @@ const ActorList = ({ actors, loading, platform, onRunActor, onImportActor }) => 
                             <div className="flex items-start justify-between">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center space-x-3">
-                                        <h4 className="text-lg font-medium text-gray-900 truncate">
+                                        <h4
+                                            className="text-lg font-medium text-gray-900 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                                            onClick={() => navigate(`/integrations/actor/${actor.id}`)}
+                                            title="Xem chi tiết actor"
+                                        >
                                             {actor.name}
                                         </h4>
                                         {actor.isPublic && (

@@ -18,6 +18,8 @@ import RunLogs from './pages/RunLogs/RunLogs';
 import Campaigns from './pages/Campaigns/Campaigns';
 import CampaignDetail from './pages/Campaigns/CampaignDetail';
 import Integrations from './pages/Integrations/Integrations';
+import ActorDetail from './pages/Integrations/ActorDetail';
+import RunDetail from './pages/Integrations/RunDetail';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
@@ -53,6 +55,8 @@ function App() {
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="campaigns/:id" element={<CampaignDetail />} />
             <Route path="integrations" element={<Integrations />} />
+            <Route path="integrations/actor/:actorId" element={<ActorDetail />} />
+            <Route path="integrations/run/:runId" element={<RunDetail />} />
             <Route path="logs" element={<RunLogs />} />
           </Route>
         </Routes>

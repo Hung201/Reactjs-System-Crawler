@@ -145,14 +145,28 @@ class ApifyService {
     // Run an actor
     async runActor(actorId, input = {}) {
         try {
+            console.log('=== Running Actor ===');
+            console.log('Actor ID:', actorId);
+            console.log('Input data:', input);
+            console.log('API Token:', this.apiToken ? 'Present' : 'Missing');
+
+            const requestBody = JSON.stringify(input);
+            console.log('Request body:', requestBody);
+
             const data = await this.makeRequest(`/acts/${actorId}/runs?token=${this.apiToken}`, {
                 method: 'POST',
-                body: JSON.stringify({ input })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: requestBody
             });
+
+            console.log('Run actor response:', data);
             return data;
         } catch (error) {
             console.error('Error running actor:', error);
-            throw new Error('Failed to run actor');
+            throw new Error(`Failed to run actor: ${error.message}`);
         }
     }
 
@@ -204,6 +218,85 @@ class ApifyService {
                 error: error.message,
                 message: 'Connection failed'
             };
+        }
+    }
+
+    // Get actor runs with pagination
+    async getActorRuns(actorId, limit = 20, offset = 0) {
+        try {
+            console.log('=== Getting Actor Runs ===');
+            console.log('Actor ID:', actorId);
+            console.log('Limit:', limit);
+            console.log('Offset:', offset);
+
+            const data = await this.makeRequest(`/acts/${actorId}/runs?token=${this.apiToken}&limit=${limit}&offset=${offset}`);
+
+            console.log('Actor runs response:', data);
+            return data;
+        } catch (error) {
+            console.error('Error fetching actor runs:', error);
+            throw new Error('Failed to fetch actor runs');
+        }
+    }
+
+    // Get actor builds with pagination
+    async getActorBuilds(actorId, limit = 20, offset = 0) {
+        try {
+            console.log('=== Getting Actor Builds ===');
+            console.log('Actor ID:', actorId);
+            console.log('Limit:', limit);
+            console.log('Offset:', offset);
+
+            const data = await this.makeRequest(`/acts/${actorId}/builds?token=${this.apiToken}&limit=${limit}&offset=${offset}`);
+
+            console.log('Actor builds response:', data);
+            return data;
+        } catch (error) {
+            console.error('Error fetching actor builds:', error);
+            throw new Error('Failed to fetch actor builds');
+        }
+    }
+
+    // Get run logs
+    async getRunLogs(runId) {
+        try {
+            console.log('=== Getting Run Logs ===');
+            console.log('Run ID:', runId);
+
+            const url = `${this.baseURL}/logs/${runId}?token=${this.apiToken}`;
+            console.log('Logs URL:', url);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'text/plain, application/json'
+                },
+                mode: 'cors'
+            });
+
+            console.log('Logs response status:', response.status);
+            console.log('Logs response headers:', response.headers);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Logs response error text:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+
+            // Logs thường là text, không phải JSON
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                console.log('Logs JSON response:', data);
+                return data;
+            } else {
+                const text = await response.text();
+                console.log('Logs text response length:', text.length);
+                return text;
+            }
+        } catch (error) {
+            console.error('Error fetching run logs:', error);
+            throw new Error(`Failed to fetch run logs: ${error.message}`);
         }
     }
 

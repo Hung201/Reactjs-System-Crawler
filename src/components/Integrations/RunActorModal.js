@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Play, Download, Eye, EyeOff, CheckCircle, AlertCircle, Copy, ExternalLink } from 'lucide-react';
 import ApifyService from '../../services/apifyService';
+import toast from 'react-hot-toast';
 
 const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
     const [inputData, setInputData] = useState({});
@@ -19,6 +20,14 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
             loadActorDetails();
         }
     }, [isOpen, actor, platform]);
+
+    // Reset form when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            // Don't reset input data when modal closes
+            // Keep the data for next time
+        }
+    }, [isOpen]);
 
     const loadActorDetails = async () => {
         if (!actor?.id || !platform?.apiToken) return;
@@ -81,41 +90,47 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
             setActorDetails(details);
             setInputSchema(inputSchema); // Cập nhật state inputSchema
 
-            // Initialize input data từ input schema hoặc example
-            let initialInputData = {};
+            // Initialize input data từ input schema hoặc example (chỉ khi chưa có dữ liệu)
+            if (Object.keys(inputData).length === 0) {
+                let initialInputData = {};
 
-            if (inputSchema && inputSchema.properties) {
-                console.log('Using input schema to create default values');
-                // Tạo default values từ schema properties
-                Object.entries(inputSchema.properties).forEach(([key, prop]) => {
-                    if (prop.default !== undefined) {
-                        initialInputData[key] = prop.default;
-                    } else if (prop.type === 'array') {
-                        initialInputData[key] = [];
-                    } else if (prop.type === 'object') {
-                        initialInputData[key] = {};
-                    } else if (prop.type === 'boolean') {
-                        initialInputData[key] = false;
-                    } else if (prop.type === 'string') {
-                        initialInputData[key] = '';
-                    } else if (prop.type === 'integer' || prop.type === 'number') {
-                        initialInputData[key] = 0;
-                    }
-                });
-                console.log('Created default values from schema:', initialInputData);
-            } else if (details?.exampleRunInput) {
-                console.log('Using exampleRunInput from API:', details.exampleRunInput);
-                initialInputData = details.exampleRunInput;
-            } else if (actor.exampleRunInput) {
-                console.log('Using exampleRunInput from actor list:', actor.exampleRunInput);
-                initialInputData = actor.exampleRunInput;
+                if (inputSchema && inputSchema.properties) {
+                    console.log('Using input schema to create default values');
+                    // Tạo default values từ schema properties
+                    Object.entries(inputSchema.properties).forEach(([key, prop]) => {
+                        if (prop.default !== undefined) {
+                            initialInputData[key] = prop.default;
+                        } else if (prop.type === 'array') {
+                            initialInputData[key] = [];
+                        } else if (prop.type === 'object') {
+                            initialInputData[key] = {};
+                        } else if (prop.type === 'boolean') {
+                            initialInputData[key] = false;
+                        } else if (prop.type === 'string') {
+                            initialInputData[key] = '';
+                        } else if (prop.type === 'integer' || prop.type === 'number') {
+                            initialInputData[key] = 0;
+                        }
+                    });
+                    console.log('Created default values from schema:', initialInputData);
+                } else if (details?.exampleRunInput) {
+                    console.log('Using exampleRunInput from API:', details.exampleRunInput);
+                    initialInputData = details.exampleRunInput;
+                } else if (actor.exampleRunInput) {
+                    console.log('Using exampleRunInput from actor list:', actor.exampleRunInput);
+                    initialInputData = actor.exampleRunInput;
+                } else {
+                    console.log('No schema or example found, using empty object');
+                    initialInputData = {};
+                }
+
+                setInputData(initialInputData);
+                setJsonInput(JSON.stringify(initialInputData, null, 2));
             } else {
-                console.log('No schema or example found, using empty object');
-                initialInputData = {};
+                console.log('Keeping existing input data:', inputData);
+                // Cập nhật JSON input để đồng bộ với input data hiện tại
+                setJsonInput(JSON.stringify(inputData, null, 2));
             }
-
-            setInputData(initialInputData);
-            setJsonInput(JSON.stringify(initialInputData, null, 2));
         } catch (error) {
             console.error('Error loading actor details:', error);
             console.error('Error details:', {
@@ -147,29 +162,50 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
 
     const handleRunActor = async () => {
         if (!platform.apiToken) {
-            alert('Platform chưa được cấu hình API token');
+            toast.error('Platform chưa được cấu hình API token');
             return;
+        }
+
+        // Validate required fields
+        if (inputSchema?.required) {
+            const missingFields = inputSchema.required.filter(field =>
+                !inputData[field] || inputData[field] === ''
+            );
+
+            if (missingFields.length > 0) {
+                toast.error(`Vui lòng điền đầy đủ các trường bắt buộc: ${missingFields.join(', ')}`);
+                return;
+            }
         }
 
         setRunning(true);
         setRunResult(null);
 
         try {
+            console.log('=== Starting Actor Run ===');
+            console.log('Actor ID:', actor.id);
+            console.log('Input Data:', inputData);
+            console.log('API Token:', platform.apiToken ? 'Present' : 'Missing');
+
             const apifyService = new ApifyService(platform.apiToken);
             const result = await apifyService.runActor(actor.id, inputData);
 
-            setRunResult({
-                success: true,
-                runId: result.data?.id,
-                message: 'Actor đã được khởi chạy thành công!',
-                data: result
-            });
+            console.log('Run result:', result);
+
+            const runId = result.data?.id || result.id;
+            const runUrl = result.data?.webUrls?.runDetail || `https://console.apify.com/actors/${actor.id}/runs/${runId}`;
+
+            // Show success toast and close modal
+            toast.success(`Actor "${actor.name}" đã được khởi chạy thành công! Run ID: ${runId}`);
+
+            // Auto close modal after 1 second
+            setTimeout(() => {
+                onClose();
+            }, 1000);
+
         } catch (error) {
-            setRunResult({
-                success: false,
-                message: error.message || 'Không thể chạy actor',
-                error: error
-            });
+            console.error('Run actor error:', error);
+            toast.error(`Không thể chạy actor: ${error.message}`);
         } finally {
             setRunning(false);
         }
@@ -474,9 +510,9 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                {/* Header - Fixed */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 className="text-xl font-semibold text-gray-900">
                             Chạy Actor: {actor.name}
@@ -493,7 +529,8 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6">
+                {/* Content - Scrollable */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Actor Info */}
                     <div className="bg-gray-50 rounded-lg p-4">
                         <h3 className="text-sm font-medium text-gray-900 mb-2">Thông tin Actor</h3>
@@ -550,24 +587,38 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
                     </div>
 
                     {/* Input Mode Toggle */}
-                    <div className="flex space-x-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => setInputMode('form')}
+                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'form'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                            >
+                                Form Input
+                            </button>
+                            <button
+                                onClick={() => setInputMode('json')}
+                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'json'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                            >
+                                JSON Input
+                            </button>
+                        </div>
                         <button
-                            onClick={() => setInputMode('form')}
-                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'form'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                            onClick={() => {
+                                if (window.confirm('Bạn có chắc muốn xóa tất cả dữ liệu đã nhập?')) {
+                                    setInputData({});
+                                    setJsonInput('{}');
+                                    toast.success('Đã xóa dữ liệu input');
+                                }
+                            }}
+                            className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
                         >
-                            Form Input
-                        </button>
-                        <button
-                            onClick={() => setInputMode('json')}
-                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'json'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                        >
-                            JSON Input
+                            Reset Form
                         </button>
                     </div>
 
@@ -634,65 +685,36 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
                         )}
                     </div>
 
-                    {/* Run Result */}
-                    {runResult && (
-                        <div className={`p-4 rounded-lg border ${runResult.success
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-red-50 border-red-200'
-                            }`}>
-                            <h4 className={`font-medium ${runResult.success ? 'text-green-800' : 'text-red-800'
-                                }`}>
-                                {runResult.success ? '✅ Thành công' : '❌ Lỗi'}
-                            </h4>
-                            <p className={`text-sm mt-1 ${runResult.success ? 'text-green-700' : 'text-red-700'
-                                }`}>
-                                {runResult.message}
-                            </p>
-                            {runResult.runId && (
-                                <div className="mt-3 p-3 bg-white rounded border">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700">
-                                            Run ID: {runResult.runId}
-                                        </span>
-                                        <button
-                                            onClick={() => copyToClipboard(runResult.runId)}
-                                            className="text-blue-600 hover:text-blue-800"
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                            Đóng
-                        </button>
-                        <button
-                            onClick={handleRunActor}
-                            disabled={running}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {running ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Đang chạy...
-                                </>
-                            ) : (
-                                <>
-                                    <Play className="h-4 w-4 mr-2" />
-                                    Chạy Actor
-                                </>
-                            )}
-                        </button>
-                    </div>
+
+                </div>
+
+                {/* Actions - Fixed */}
+                <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 flex-shrink-0 bg-white">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        Đóng
+                    </button>
+                    <button
+                        onClick={handleRunActor}
+                        disabled={running}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {running ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Đang chạy...
+                            </>
+                        ) : (
+                            <>
+                                <Play className="h-4 w-4 mr-2" />
+                                Chạy Actor
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>
