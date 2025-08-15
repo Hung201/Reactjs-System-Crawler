@@ -47,11 +47,28 @@ npm start
 
 ### Environment Variables
 
-Tạo file `.env` trong thư mục gốc:
-
-```env
-REACT_APP_API_URL=http://localhost:3001/api
+1. **Tạo file `.env` từ template**
+```bash
+cp .env.example .env
 ```
+
+2. **Cấu hình các biến môi trường trong file `.env`:**
+```env
+# Apify API Configuration
+REACT_APP_APIFY_API_TOKEN=your_apify_api_token_here
+REACT_APP_APIFY_BASE_URL=https://api.apify.com/v2
+
+# Backend API Configuration
+REACT_APP_API_BASE_URL=http://localhost:3001/api
+
+# Other environment variables
+REACT_APP_ENVIRONMENT=development
+```
+
+**⚠️ Lưu ý quan trọng:**
+- File `.env` chứa thông tin nhạy cảm và đã được thêm vào `.gitignore`
+- Không bao giờ commit file `.env` lên Git
+- Chỉ sử dụng file `.env.example` làm template
 
 ### Backend API
 
