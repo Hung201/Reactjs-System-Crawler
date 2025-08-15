@@ -300,6 +300,217 @@ class ApifyService {
         }
     }
 
+    // Get run details
+    async getRun(runId) {
+        try {
+            console.log('=== Getting Run Details ===');
+            console.log('Run ID:', runId);
+
+            const url = `${this.baseURL}/actor-runs/${runId}?token=${this.apiToken}`;
+            console.log('Run URL:', url);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                mode: 'cors'
+            });
+
+            console.log('Run response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Run response error text:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+
+            const responseData = await response.json();
+            console.log('Raw response data:', responseData);
+
+            // Xử lý cấu trúc response có thể có data wrapper
+            const data = responseData.data || responseData;
+            console.log('Processed run data:', data);
+
+            // Log tất cả các keys trong response để tìm defaultDatasetId
+            console.log('Run response keys:', Object.keys(data));
+            console.log('Run response defaultDatasetId:', data.defaultDatasetId);
+            console.log('Run response datasetId:', data.datasetId);
+            console.log('Run response defaultKeyValueStoreId:', data.defaultKeyValueStoreId);
+            console.log('Run response defaultRequestQueueId:', data.defaultRequestQueueId);
+
+            // Kiểm tra các trường có thể chứa dataset ID
+            const possibleDatasetFields = [
+                'defaultDatasetId',
+                'datasetId',
+                'defaultDataset',
+                'dataset',
+                'storage',
+                'output'
+            ];
+
+            for (const field of possibleDatasetFields) {
+                if (data[field]) {
+                    console.log(`Found dataset field "${field}":`, data[field]);
+                }
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error fetching run details:', error);
+            throw new Error(`Failed to fetch run details: ${error.message}`);
+        }
+    }
+
+    // Get run dataset using defaultDatasetId
+    async getRunDataset(runId) {
+        try {
+            console.log('=== Getting Run Dataset ===');
+            console.log('Run ID:', runId);
+
+            // First, get run details to get defaultDatasetId
+            const runDetails = await this.getRun(runId);
+            console.log('Run details:', runDetails);
+
+            // Tìm dataset ID từ nhiều trường có thể có
+            let datasetId = null;
+
+            // Thứ tự ưu tiên tìm dataset ID
+            const datasetIdFields = [
+                'defaultDatasetId',
+                'datasetId',
+                'defaultDataset',
+                'dataset'
+            ];
+
+            for (const field of datasetIdFields) {
+                if (runDetails[field]) {
+                    datasetId = runDetails[field];
+                    console.log(`Found dataset ID in field "${field}":`, datasetId);
+                    break;
+                }
+            }
+
+            // Nếu không tìm thấy, kiểm tra các trường nested
+            if (!datasetId && runDetails.storage) {
+                console.log('Checking storage field:', runDetails.storage);
+                if (runDetails.storage.defaultDatasetId) {
+                    datasetId = runDetails.storage.defaultDatasetId;
+                    console.log('Found dataset ID in storage.defaultDatasetId:', datasetId);
+                }
+            }
+
+            if (!datasetId) {
+                console.error('No dataset ID found in run details. Available fields:', Object.keys(runDetails));
+                throw new Error('No dataset ID found in run details. Run may not have completed or may not have generated a dataset.');
+            }
+
+            console.log('Using Dataset ID:', datasetId);
+
+            // Now get dataset using datasetId
+            const url = `${this.baseURL}/datasets/${datasetId}/items?clean=true&format=json&token=${this.apiToken}`;
+            console.log('Dataset URL:', url);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                mode: 'cors'
+            });
+
+            console.log('Dataset response status:', response.status);
+            console.log('Dataset response headers:', response.headers);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Dataset response error text:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log('Dataset response data length:', data.length);
+            return data;
+        } catch (error) {
+            console.error('Error fetching run dataset:', error);
+            throw new Error(`Failed to fetch run dataset: ${error.message}`);
+        }
+    }
+
+    // Get dataset info using defaultDatasetId
+    async getDatasetInfo(runId) {
+        try {
+            console.log('=== Getting Dataset Info ===');
+            console.log('Run ID:', runId);
+
+            // First, get run details to get defaultDatasetId
+            const runDetails = await this.getRun(runId);
+            console.log('Run details for dataset info:', runDetails);
+
+            // Tìm dataset ID từ nhiều trường có thể có
+            let datasetId = null;
+
+            // Thứ tự ưu tiên tìm dataset ID
+            const datasetIdFields = [
+                'defaultDatasetId',
+                'datasetId',
+                'defaultDataset',
+                'dataset'
+            ];
+
+            for (const field of datasetIdFields) {
+                if (runDetails[field]) {
+                    datasetId = runDetails[field];
+                    console.log(`Found dataset ID in field "${field}":`, datasetId);
+                    break;
+                }
+            }
+
+            // Nếu không tìm thấy, kiểm tra các trường nested
+            if (!datasetId && runDetails.storage) {
+                console.log('Checking storage field:', runDetails.storage);
+                if (runDetails.storage.defaultDatasetId) {
+                    datasetId = runDetails.storage.defaultDatasetId;
+                    console.log('Found dataset ID in storage.defaultDatasetId:', datasetId);
+                }
+            }
+
+            if (!datasetId) {
+                console.error('No dataset ID found in run details. Available fields:', Object.keys(runDetails));
+                throw new Error('No dataset ID found in run details. Run may not have completed or may not have generated a dataset.');
+            }
+
+            console.log('Default Dataset ID for info:', datasetId);
+
+            const url = `${this.baseURL}/datasets/${datasetId}?token=${this.apiToken}`;
+            console.log('Dataset Info URL:', url);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                mode: 'cors'
+            });
+
+            console.log('Dataset Info response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Dataset Info response error text:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+
+            const responseData = await response.json();
+            const data = responseData.data || responseData;
+            console.log('Dataset Info response data:', data);
+            return data;
+        } catch (error) {
+            console.error('Error fetching dataset info:', error);
+            throw new Error(`Failed to fetch dataset info: ${error.message}`);
+        }
+    }
+
     // Get actor store (public actors)
     async getActorStore(searchTerm = '', category = '') {
         try {
