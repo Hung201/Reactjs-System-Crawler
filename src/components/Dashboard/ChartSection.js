@@ -18,16 +18,11 @@ const ChartSection = ({ data, isLoading }) => {
     );
   }
 
-  // Mock data nếu không có data thực
-  const chartData = data || [
-    { date: '01/12', products: 12, news: 8, videos: 3 },
-    { date: '02/12', products: 15, news: 10, videos: 5 },
-    { date: '03/12', products: 18, news: 12, videos: 7 },
-    { date: '04/12', products: 22, news: 15, videos: 9 },
-    { date: '05/12', products: 25, news: 18, videos: 11 },
-    { date: '06/12', products: 28, news: 20, videos: 13 },
-    { date: '07/12', products: 30, news: 22, videos: 15 },
-  ];
+  // Format data từ API: [{date: "2025-08-11", count: 0}, ...]
+  const chartData = data.map(item => ({
+    date: new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+    count: item.count
+  }));
 
   return (
     <div className="h-64">
@@ -52,47 +47,25 @@ const ChartSection = ({ data, isLoading }) => {
               borderRadius: '8px',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             }}
+            formatter={(value, name) => [value, 'Số lượng']}
+            labelFormatter={(label) => `Ngày: ${label}`}
           />
           <Line
             type="monotone"
-            dataKey="products"
-            stroke="#8b5cf6"
-            strokeWidth={2}
-            dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="news"
+            dataKey="count"
             stroke="#3b82f6"
             strokeWidth={2}
             dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="videos"
-            stroke="#f59e0b"
-            strokeWidth={2}
-            dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
             activeDot={{ r: 6 }}
           />
         </LineChart>
       </ResponsiveContainer>
 
       {/* Legend */}
-      <div className="flex items-center justify-center space-x-6 mt-4">
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-          <span className="text-sm text-gray-600">Sản phẩm</span>
-        </div>
+      <div className="flex items-center justify-center mt-4">
         <div className="flex items-center">
           <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-          <span className="text-sm text-gray-600">Tin tức</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-          <span className="text-sm text-gray-600">Video</span>
+          <span className="text-sm text-gray-600">Tổng số dữ liệu</span>
         </div>
       </div>
     </div>

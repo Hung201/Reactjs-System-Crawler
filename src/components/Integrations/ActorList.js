@@ -320,10 +320,6 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
                             <Clock className="h-4 w-4 mr-1" />
                             Quản lý hẹn giờ ({schedules.length})
                         </button>
-                        {/* Debug info */}
-                        <span className="text-xs text-gray-500">
-                            Debug: {schedules.length} schedules
-                        </span>
                     </div>
                 </div>
 

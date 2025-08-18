@@ -119,9 +119,22 @@ export const logsAPI = {
 
 // Dashboard API
 export const dashboardAPI = {
-    getStats: () => api.get('/dashboard/stats'),
-    getRecentData: () => api.get('/dashboard/recent-data'),
-    getChartData: (period) => api.get(`/dashboard/chart-data?period=${period}`),
+    getStats: async () => {
+        const response = await api.get('/dashboard/stats');
+        return response.data;
+    },
+    getRecentData: async () => {
+        const response = await api.get('/dashboard/recent-data');
+        return response.data;
+    },
+    getChartData: async (period) => {
+        const response = await api.get(`/dashboard/chart-data?period=${period}`);
+        return response.data;
+    },
+    getDetailedStats: async () => {
+        const response = await api.get('/dashboard/detailed-stats');
+        return response.data;
+    },
 };
 
 // Campaigns API
