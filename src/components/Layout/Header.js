@@ -49,7 +49,7 @@ const Header = () => {
 
           {showDropdown && (
             <>
-              <div 
+              <div
                 className="fixed inset-0 z-10"
                 onClick={() => setShowDropdown(false)}
               />

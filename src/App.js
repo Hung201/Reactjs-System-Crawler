@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 import CrawlSources from './pages/CrawlSources/CrawlSources';
 import CrawlData from './pages/CrawlData/CrawlData';
@@ -21,6 +22,8 @@ import Integrations from './pages/Integrations/Integrations';
 import ActorDetail from './pages/Integrations/ActorDetail';
 import RunDetail from './pages/Integrations/RunDetail';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import RoleBasedRoute from './components/Auth/RoleBasedRoute';
+import { USER_ROLES } from './utils/constants';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -37,6 +40,10 @@ function App() {
             isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />
           } />
 
+          <Route path="/forgot-password" element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />
+          } />
+
           <Route path="/" element={
             <ProtectedRoute>
               <Layout />
@@ -44,20 +51,72 @@ function App() {
           }>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="sources" element={<CrawlSources />} />
+            <Route path="sources" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER]}>
+                <CrawlSources />
+              </RoleBasedRoute>
+            } />
             <Route path="data" element={<CrawlData />} />
-            <Route path="users" element={<Users />} />
-            <Route path="actors" element={<ActorUploads />} />
-            <Route path="actors/:id/edit" element={<ActorEditor />} />
-            <Route path="actors/:id/build" element={<BuildLog />} />
-            <Route path="actors/:id/run" element={<RunLog />} />
-            <Route path="actors/new" element={<NewActorEditor />} />
-            <Route path="campaigns" element={<Campaigns />} />
-            <Route path="campaigns/:id" element={<CampaignDetail />} />
-            <Route path="integrations" element={<Integrations />} />
-            <Route path="integrations/actor/:actorId" element={<ActorDetail />} />
-            <Route path="integrations/run/:runId" element={<RunDetail />} />
-            <Route path="logs" element={<RunLogs />} />
+            <Route path="users" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <Users />
+              </RoleBasedRoute>
+            } />
+            <Route path="actors" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER]}>
+                <ActorUploads />
+              </RoleBasedRoute>
+            } />
+            <Route path="actors/:id/edit" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER]}>
+                <ActorEditor />
+              </RoleBasedRoute>
+            } />
+            <Route path="actors/:id/build" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER]}>
+                <BuildLog />
+              </RoleBasedRoute>
+            } />
+            <Route path="actors/:id/run" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER]}>
+                <RunLog />
+              </RoleBasedRoute>
+            } />
+            <Route path="actors/new" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER]}>
+                <NewActorEditor />
+              </RoleBasedRoute>
+            } />
+            <Route path="campaigns" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR]}>
+                <Campaigns />
+              </RoleBasedRoute>
+            } />
+            <Route path="campaigns/:id" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR]}>
+                <CampaignDetail />
+              </RoleBasedRoute>
+            } />
+            <Route path="integrations" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR]}>
+                <Integrations />
+              </RoleBasedRoute>
+            } />
+            <Route path="integrations/actor/:actorId" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR]}>
+                <ActorDetail />
+              </RoleBasedRoute>
+            } />
+            <Route path="integrations/run/:runId" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR]}>
+                <RunDetail />
+              </RoleBasedRoute>
+            } />
+            <Route path="logs" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CRAWLER, USER_ROLES.EDITOR]}>
+                <RunLogs />
+              </RoleBasedRoute>
+            } />
           </Route>
         </Routes>
 

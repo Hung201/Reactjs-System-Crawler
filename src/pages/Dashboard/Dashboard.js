@@ -21,9 +21,13 @@ import {
 import { dashboardAPI } from '../../services/api';
 import StatCard from '../../components/Dashboard/StatCard';
 import ChartSection from '../../components/Dashboard/ChartSection';
+import { useAuthStore } from '../../stores/authStore';
+import { USER_ROLES } from '../../utils/constants';
+import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   // API calls theo ảnh
   const { data: statsResponse, isLoading: statsLoading, error: statsError } = useQuery({
@@ -55,15 +59,27 @@ const Dashboard = () => {
 
   // Navigation functions
   const handleAddSource = () => {
-    navigate('/sources');
+    if (user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.CRAWLER) {
+      navigate('/sources');
+    } else {
+      toast.error('Bạn không có quyền truy cập trang này');
+    }
   };
 
   const handleRunActor = () => {
-    navigate('/integrations');
+    if (user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.CRAWLER || user?.role === USER_ROLES.EDITOR) {
+      navigate('/integrations');
+    } else {
+      toast.error('Bạn không có quyền truy cập trang này');
+    }
   };
 
   const handleManageUsers = () => {
-    navigate('/users');
+    if (user?.role === USER_ROLES.ADMIN) {
+      navigate('/users');
+    } else {
+      toast.error('Bạn không có quyền truy cập trang này');
+    }
   };
 
   const handleRefreshData = () => {
@@ -75,7 +91,11 @@ const Dashboard = () => {
   };
 
   const handleViewLogs = () => {
-    navigate('/logs');
+    if (user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.EDITOR || user?.role === USER_ROLES.CRAWLER) {
+      navigate('/logs');
+    } else {
+      toast.error('Bạn không có quyền truy cập trang này');
+    }
   };
 
   // Debug logs
@@ -255,26 +275,34 @@ const Dashboard = () => {
           Thao tác nhanh
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button onClick={handleAddSource} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Globe className="w-6 h-6 text-blue-600 mr-3" />
-            <span className="font-medium">Thêm nguồn crawl</span>
-          </button>
-          <button onClick={handleRunActor} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Play className="w-6 h-6 text-green-600 mr-3" />
-            <span className="font-medium">Chạy actor</span>
-          </button>
-          <button onClick={handleManageUsers} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Users className="w-6 h-6 text-purple-600 mr-3" />
-            <span className="font-medium">Quản lý người dùng</span>
-          </button>
+          {user?.role === USER_ROLES.ADMIN && (
+            <button onClick={handleAddSource} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <Globe className="w-6 h-6 text-blue-600 mr-3" />
+              <span className="font-medium">Thêm nguồn crawl</span>
+            </button>
+          )}
+          {user?.role === USER_ROLES.ADMIN && (
+            <button onClick={handleRunActor} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <Play className="w-6 h-6 text-green-600 mr-3" />
+              <span className="font-medium">Chạy actor</span>
+            </button>
+          )}
+          {user?.role === USER_ROLES.ADMIN && (
+            <button onClick={handleManageUsers} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <Users className="w-6 h-6 text-purple-600 mr-3" />
+              <span className="font-medium">Quản lý người dùng</span>
+            </button>
+          )}
           <button onClick={handleViewData} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <Database className="w-6 h-6 text-indigo-600 mr-3" />
             <span className="font-medium">Xem dữ liệu</span>
           </button>
-          <button onClick={handleViewLogs} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <BarChart3 className="w-6 h-6 text-orange-600 mr-3" />
-            <span className="font-medium">Xem nhật ký</span>
-          </button>
+          {(user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.EDITOR || user?.role === USER_ROLES.CRAWLER) && (
+            <button onClick={handleViewLogs} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <BarChart3 className="w-6 h-6 text-orange-600 mr-3" />
+              <span className="font-medium">Xem nhật ký</span>
+            </button>
+          )}
           <button onClick={handleRefreshData} className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <RefreshCw className="w-6 h-6 text-teal-600 mr-3" />
             <span className="font-medium">Làm mới dữ liệu</span>

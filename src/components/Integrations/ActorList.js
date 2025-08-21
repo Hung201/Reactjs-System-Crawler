@@ -250,7 +250,8 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
         localStorage.setItem('actorSchedules', JSON.stringify(updatedSchedules));
         setSchedules(updatedSchedules);
 
-        alert(`Đã hủy hẹn giờ cho actor "${scheduleToCancel.actorName}"`);
+        // Sử dụng toast thay vì alert
+        toast.success(`Đã hủy hẹn giờ cho actor "${scheduleToCancel.actorName}"`);
     };
 
     const handleShowSchedulesList = () => {

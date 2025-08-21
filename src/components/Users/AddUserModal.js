@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { X, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { usersAPI } from '../../services/api';
@@ -74,11 +75,38 @@ const AddUserModal = ({ isOpen, onClose }) => {
         }
     };
 
+    console.log('AddUserModal - isOpen:', isOpen);
     if (!isOpen) return null;
 
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content">
+    const modalContent = (
+        <div
+            className="modal-overlay"
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 9999
+            }}
+        >
+            <div
+                className="modal-content"
+                style={{
+                    backgroundColor: 'white',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    maxWidth: '28rem',
+                    width: '100%',
+                    margin: '0 1rem',
+                    maxHeight: '90vh',
+                    overflowY: 'auto'
+                }}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b">
                     <h2 className="text-xl font-semibold text-gray-900">Thêm người dùng</h2>
@@ -266,6 +294,8 @@ const AddUserModal = ({ isOpen, onClose }) => {
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
 
 export default AddUserModal; 

@@ -39,6 +39,9 @@ export const authAPI = {
     register: (userData) => api.post('/auth/register', userData),
     updateProfile: (userData) => api.put('/auth/profile', userData),
     changePassword: (passwords) => api.put('/auth/change-password', passwords),
+    forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+    verifyResetCode: (email, token) => api.post('/auth/verify-reset-code', { email, token }),
+    resetPassword: (email, token, newPassword) => api.post('/auth/reset-password', { email, token, newPassword }),
 };
 
 // Crawl Sources API
