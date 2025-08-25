@@ -98,16 +98,6 @@ const Dashboard = () => {
     }
   };
 
-  // Debug logs
-  console.log('Dashboard API responses:', {
-    statsResponse,
-    chartResponse,
-    detailedResponse,
-    statsError,
-    chartError,
-    detailedError
-  });
-
   // Data từ API thực tế - lấy trực tiếp từ response
   const statsData = statsResponse?.data || {};
   const chartDataArray = chartResponse?.data || [];

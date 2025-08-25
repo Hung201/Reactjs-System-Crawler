@@ -31,7 +31,6 @@ const ActorDetail = () => {
     useEffect(() => {
         const timeout = setTimeout(() => {
             if (loading) {
-                console.log('Loading timeout - forcing loading to false');
                 setLoading(false);
                 toast.error('Tải dữ liệu quá lâu, vui lòng thử lại');
             }
@@ -49,19 +48,15 @@ const ActorDetail = () => {
             console.warn('No API token found. Please set your Apify API token.');
         }
 
-        console.log('Setting API token:', token ? 'Present' : 'Missing');
         setApiToken(token);
     }, []);
 
     useEffect(() => {
-        console.log('ActorDetail useEffect triggered:', { actorId, apiToken: apiToken ? 'Present' : 'Missing' });
         if (actorId && apiToken) {
-            console.log('Starting to load actor details, runs and builds');
             loadActorDetails();
             loadRuns();
             loadBuilds(); // Load builds ngay từ đầu
         } else {
-            console.log('Missing actorId or apiToken, setting loading to false');
             setLoading(false);
         }
     }, [actorId, apiToken]);
@@ -561,30 +556,12 @@ const ActorDetail = () => {
                                         {loadingRuns ? 'Đang tải...' : 'Làm mới'}
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            console.log('=== Debug Info ===');
-                                            console.log('Actor ID:', actorId);
-                                            console.log('API Token:', apiToken);
-                                            console.log('Current runs:', runs);
-                                            console.log('Total runs:', totalRuns);
-                                            console.log('Current page:', currentPage);
-                                            console.log('Items per page:', itemsPerPage);
-                                        }}
-                                        className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-                                    >
-                                        Debug
-                                    </button>
-                                    <button
                                         onClick={async () => {
-                                            console.log('=== Testing API Directly ===');
                                             try {
                                                 const response = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${apiToken}&limit=10`);
-                                                console.log('Direct API Response Status:', response.status);
                                                 const data = await response.json();
-                                                console.log('Direct API Response Data:', data);
                                                 toast.success(`API Test: ${response.status === 200 ? 'Success' : 'Failed'}`);
                                             } catch (error) {
-                                                console.error('Direct API Test Error:', error);
                                                 toast.error('API Test Failed');
                                             }
                                         }}

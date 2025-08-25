@@ -66,7 +66,7 @@ const Register = () => {
             Đăng ký tài khoản
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Hệ thống Crawl Dữ liệu giống Apify
+            Hệ thống quản trị Crawl nội bộ
           </p>
           <p className="mt-1 text-center text-xs text-gray-500">
             Tài khoản mới sẽ được tạo với quyền "Xem" (Viewer)

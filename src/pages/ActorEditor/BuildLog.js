@@ -134,7 +134,7 @@ const BuildLog = () => {
                 // Generate build logs based on actual code
                 const buildLogs = generateBuildLogs(actorCode);
 
-                // Simulate streaming build logs
+                // Simulate streaming build logs với delay tăng lên để tránh spam
                 let currentIndex = 0;
                 const interval = setInterval(() => {
                     if (currentIndex < buildLogs.length) {
@@ -148,12 +148,12 @@ const BuildLog = () => {
                         setBuildStatus('succeeded');
                         setBuildInfo(prev => ({ ...prev, exitCode: 0 }));
                     }
-                }, 500);
+                }, 1000); // Tăng từ 500ms lên 1000ms
 
                 return () => clearInterval(interval);
             } catch (error) {
                 console.error('Error getting actor code:', error);
-                // Fallback to default logs
+                // Fallback to default logs với delay tăng lên
                 const defaultLogs = generateBuildLogs('');
                 let currentIndex = 0;
                 const interval = setInterval(() => {
@@ -168,7 +168,7 @@ const BuildLog = () => {
                         setBuildStatus('succeeded');
                         setBuildInfo(prev => ({ ...prev, exitCode: 0 }));
                     }
-                }, 500);
+                }, 1000); // Tăng từ 500ms lên 1000ms
 
                 return () => clearInterval(interval);
             }

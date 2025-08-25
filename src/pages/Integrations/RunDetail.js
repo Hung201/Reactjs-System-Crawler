@@ -37,23 +37,13 @@ const RunDetail = () => {
 
     const loadRunDetails = async () => {
         try {
-            console.log('=== Loading Run Details ===');
-            console.log('Run ID:', runId);
-            console.log('API Token:', apiToken ? 'Present' : 'Missing');
-
             const cleanRunId = runId?.trim();
             const apifyService = new ApifyService(apiToken);
             const response = await apifyService.getRun(cleanRunId);
 
-            console.log('Run details response:', response);
             setRun(response);
         } catch (error) {
             console.error('Error loading run details:', error);
-            console.error('Error details:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data
-            });
             toast.error(`Không thể tải thông tin run: ${error.message}`);
         } finally {
             setLoading(false);
@@ -63,16 +53,9 @@ const RunDetail = () => {
     const loadRunLogs = async () => {
         setLoadingLogs(true);
         try {
-            console.log('=== Loading Run Logs ===');
-            console.log('Run ID (original):', runId);
-            console.log('Run ID (cleaned):', runId?.trim());
-            console.log('API Token:', apiToken ? 'Present' : 'Missing');
-
             const cleanRunId = runId?.trim();
             const apifyService = new ApifyService(apiToken);
             const response = await apifyService.getRunLogs(cleanRunId);
-
-            console.log('Logs API Response:', response);
 
             // Logs thường là text, không phải JSON
             if (typeof response === 'string') {
@@ -82,11 +65,6 @@ const RunDetail = () => {
             }
         } catch (error) {
             console.error('Error loading logs:', error);
-            console.error('Error details:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data
-            });
             toast.error(`Không thể tải logs: ${error.message}`);
         } finally {
             setLoadingLogs(false);
@@ -95,13 +73,11 @@ const RunDetail = () => {
 
     const loadDatasetInfo = async () => {
         try {
-            console.log('=== Loading Dataset Info ===');
             const cleanRunId = runId?.trim();
             const apifyService = new ApifyService(apiToken);
 
             const datasetInfoResponse = await apifyService.getDatasetInfo(cleanRunId);
             setDatasetInfo(datasetInfoResponse);
-            console.log('Dataset info loaded:', datasetInfoResponse);
         } catch (error) {
             console.warn('Could not load dataset info:', error);
             setDatasetInfo(null);
@@ -111,21 +87,13 @@ const RunDetail = () => {
     const loadDataset = async () => {
         setLoadingDataset(true);
         try {
-            console.log('=== Loading Dataset ===');
-            console.log('Run ID (original):', runId);
-            console.log('Run ID (typeof):', typeof runId);
-            console.log('Run ID (length):', runId?.length);
-            console.log('API Token:', apiToken ? 'Present' : 'Missing');
-
             // Đảm bảo runId không bị thay đổi
             const cleanRunId = runId?.trim();
-            console.log('Run ID (cleaned):', cleanRunId);
 
             const apifyService = new ApifyService(apiToken);
 
             // Lấy dữ liệu dataset
             const response = await apifyService.getRunDataset(cleanRunId);
-            console.log('Dataset API Response:', response);
 
             if (Array.isArray(response)) {
                 setDataset(response);
@@ -135,11 +103,6 @@ const RunDetail = () => {
             }
         } catch (error) {
             console.error('Error loading dataset:', error);
-            console.error('Error details:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data
-            });
             toast.error(`Không thể tải dataset: ${error.message}`);
             setDataset([]);
         } finally {
@@ -348,7 +311,6 @@ const RunDetail = () => {
             }
 
             const link = `https://api.apify.com/v2/datasets/${datasetId}/items?clean=true&format=${format}&token=${apiToken}`;
-            console.log('Copying dataset link:', link);
             navigator.clipboard.writeText(link).then(() => {
                 toast.success(`Đã copy link dataset vào clipboard dưới định dạng ${format.toUpperCase()}`);
             }).catch(() => {
@@ -383,7 +345,6 @@ const RunDetail = () => {
             }
 
             const link = `https://api.apify.com/v2/datasets/${datasetId}/items?clean=true&format=${format}&token=${apiToken}`;
-            console.log('Opening dataset link in new tab:', link);
             window.open(link, '_blank');
         } catch (error) {
             console.error('Error opening dataset link:', error);
@@ -414,7 +375,6 @@ const RunDetail = () => {
             }
 
             const link = `https://api.apify.com/v2/datasets/${datasetId}/items?clean=true&format=${format}&token=${apiToken}`;
-            console.log('Previewing dataset link:', link);
             window.open(link, '_blank');
         } catch (error) {
             console.error('Error previewing dataset:', error);

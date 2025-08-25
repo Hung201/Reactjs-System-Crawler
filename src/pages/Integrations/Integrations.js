@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Settings, Play, Download, Eye, EyeOff, Copy, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { useToast } from '../../hooks/useToast';
+import useToast from '../../hooks/useToast';
 import { platformsAPI } from '../../services/api';
 import ApifyService from '../../services/apifyService';
 import PlatformCard from '../../components/Integrations/PlatformCard';
@@ -100,13 +100,8 @@ const Integrations = () => {
 
             if (editingPlatform) {
                 // Update existing platform
-                console.log('=== UPDATING PLATFORM ===');
-                console.log('Platform ID:', editingPlatform._id || editingPlatform.id);
-                console.log('Platform Data:', platformData);
-
                 try {
                     response = await platformsAPI.update(editingPlatform._id || editingPlatform.id, platformData);
-                    console.log('Update response:', response);
 
                     if (response && response.success) {
                         showSuccess(`Platform ${platformData.name} đã được cập nhật thành công!`);
@@ -115,7 +110,6 @@ const Integrations = () => {
                         return;
                     }
                 } catch (updateError) {
-                    console.log('Update failed, trying delete + create approach...');
 
                     // Fallback: Delete old platform and create new one
                     try {
@@ -124,7 +118,6 @@ const Integrations = () => {
 
                         // Create new platform
                         response = await platformsAPI.create(platformData);
-                        console.log('Create response (fallback):', response);
 
                         if (response && response.success) {
                             showSuccess(`Platform ${platformData.name} đã được cập nhật thành công! (via delete+create)`);
@@ -140,11 +133,7 @@ const Integrations = () => {
                 }
             } else {
                 // Create new platform
-                console.log('=== CREATING NEW PLATFORM ===');
-                console.log('Platform Data:', platformData);
-
                 response = await platformsAPI.create(platformData);
-                console.log('Platform creation response:', response);
 
                 if (response && response.success) {
                     showSuccess(`Platform ${platformData.name} đã được thêm thành công!`);
@@ -159,13 +148,6 @@ const Integrations = () => {
             setEditingPlatform(null);
         } catch (error) {
             console.error('Error adding/updating platform:', error);
-            console.error('Error details:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data,
-                url: error.config?.url,
-                method: error.config?.method
-            });
             showError(editingPlatform ? 'Không thể cập nhật platform' : 'Không thể thêm platform');
         } finally {
             setLoading(false);

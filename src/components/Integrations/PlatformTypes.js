@@ -38,8 +38,6 @@ const PlatformTypes = () => {
                 return;
             }
 
-            // Nếu API không có endpoint này, sử dụng fallback types
-            console.log('Using fallback platform types');
             setTypes([]); // Sẽ sử dụng fallback types trong render
             setError(null); // Không hiển thị lỗi vì có fallback
         } finally {

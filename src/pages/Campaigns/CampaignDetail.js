@@ -92,7 +92,6 @@ const CampaignDetail = () => {
                 }
             }
 
-            console.log('🔍 Parsed products from log:', products);
             return products;
         } catch (error) {
             console.error('Error parsing products from log:', error);
@@ -103,15 +102,10 @@ const CampaignDetail = () => {
     // Load run history from campaign API (since it's included in campaign data)
     const loadRunHistory = async () => {
         try {
-            console.log('🔍 Loading run history for campaign:', id);
             const result = await campaignService.getCampaign(id);
-            console.log('🔍 Campaign API response for run history:', result);
-
             if (result.success && result.data && result.data.runHistory && Array.isArray(result.data.runHistory)) {
-                console.log('🔍 Found run history:', result.data.runHistory);
                 setRunHistory(result.data.runHistory);
             } else {
-                console.log('🔍 No run history found in campaign data');
                 setRunHistory([]);
             }
         } catch (error) {
@@ -123,39 +117,30 @@ const CampaignDetail = () => {
     // Load crawled data from campaign API (prioritize status API for latest data)
     const loadCrawledData = async () => {
         if (isLoadingData) {
-            console.log('⚠️ Already loading data, skipping...');
             return;
         }
 
         try {
             setIsLoadingData(true);
-            console.log('🔍 Loading crawled data for campaign:', id);
 
             // First try status API for latest data
             const statusResult = await campaignService.getCampaignStatus(id);
-            console.log('🔍 Status API response:', statusResult);
 
             if (statusResult.success) {
                 // Check for data.result.output first (correct API structure)
                 if (statusResult.data?.result?.output && Array.isArray(statusResult.data.result.output)) {
-                    console.log('🔍 Found output data in status API result:', statusResult.data.result.output);
-                    console.log('🔍 Total products from status API:', statusResult.data.result.output.length);
                     setCrawledData(statusResult.data.result.output);
                     return;
                 }
                 // Check for data.output (fallback)
                 else if (statusResult.data?.output && Array.isArray(statusResult.data.output)) {
-                    console.log('🔍 Found output data in status API data:', statusResult.data.output);
-                    console.log('🔍 Total products from status API:', statusResult.data.output.length);
                     setCrawledData(statusResult.data.output);
                     return;
                 }
                 // Check for result.log and parse it
                 else if (statusResult.data?.result?.log) {
-                    console.log('🔍 Found log data, parsing products...');
                     const logText = statusResult.data.result.log;
                     const products = parseProductsFromLog(logText);
-                    console.log('🔍 Total products parsed from log:', products.length);
                     setCrawledData(products);
                     return;
                 }
@@ -163,21 +148,17 @@ const CampaignDetail = () => {
 
             // Fallback to campaign API runHistory
             const campaignResult = await campaignService.getCampaign(id);
-            console.log('🔍 Campaign API response for crawled data:', campaignResult);
 
             if (campaignResult.success && campaignResult.data) {
                 if (campaignResult.data.runHistory && campaignResult.data.runHistory.length > 0) {
                     const latestRun = campaignResult.data.runHistory[0]; // Most recent run
                     if (latestRun.output && Array.isArray(latestRun.output)) {
-                        console.log('🔍 Found output data in latest run:', latestRun.output);
-                        console.log('🔍 Total products from runHistory:', latestRun.output.length);
                         setCrawledData(latestRun.output);
                         return;
                     }
                 }
             }
 
-            console.log('🔍 No output or log data found');
             setCrawledData([]);
         } catch (error) {
             console.error('Error loading crawled data:', error);
@@ -191,9 +172,7 @@ const CampaignDetail = () => {
     useEffect(() => {
         const fetchCampaign = async () => {
             try {
-                console.log('🔍 Fetching campaign:', id);
                 const result = await campaignService.getCampaign(id);
-                console.log('🔍 Campaign API response:', result);
 
                 if (result.success) {
                     // Normalize campaign data to prevent rendering issues
@@ -224,12 +203,10 @@ const CampaignDetail = () => {
                         inputSchema: result.data.inputSchema || {}
                     };
 
-                    console.log('🔍 Normalized campaign:', normalizedCampaign);
                     setCampaign(normalizedCampaign);
 
                     // Only set crawled data if it's not already set
                     if (result.data.output && !crawledData) {
-                        console.log('🔍 Found output data in campaign:', result.data.output);
                         setCrawledData(result.data.output);
                     }
                 } else {
@@ -256,13 +233,13 @@ const CampaignDetail = () => {
     // Auto-load data when campaign status changes to completed
     useEffect(() => {
         if (campaign && campaign.status === CAMPAIGN_STATUS.COMPLETED && !crawledData && !isRunning && !isLoadingData) {
-            console.log('🔄 Campaign completed, auto-loading data...');
+
             // Use longer delay to avoid rate limiting
             setTimeout(() => {
                 loadCrawledData();
             }, 3000); // Wait 3 seconds for API to be ready
         }
-    }, [campaign?.status, crawledData, isRunning, isLoadingData]);
+    }, [campaign?.status, isRunning, isLoadingData]); // Removed crawledData from dependencies
 
     // Cleanup polling on unmount
     useEffect(() => {
@@ -281,7 +258,6 @@ const CampaignDetail = () => {
 
             // Step 1: Call run API
             const runResult = await campaignService.runCampaign(id);
-            console.log('Run API response:', runResult);
 
             if (runResult.success) {
                 setRunStatus({
@@ -294,7 +270,6 @@ const CampaignDetail = () => {
                 const interval = setInterval(async () => {
                     try {
                         const statusResult = await campaignService.getCampaignStatus(id);
-                        console.log('Status API response:', statusResult);
 
                         if (statusResult.success) {
                             const status = statusResult.data?.status;
@@ -316,27 +291,21 @@ const CampaignDetail = () => {
                                 // Check for data.result.output first (correct API structure)
                                 if (statusResult.data?.result?.output && Array.isArray(statusResult.data.result.output)) {
                                     outputData = statusResult.data.result.output;
-                                    console.log('✅ Found output data in result:', outputData);
                                 }
                                 // Check for data.output (fallback)
                                 else if (statusResult.data?.output && Array.isArray(statusResult.data.output)) {
                                     outputData = statusResult.data.output;
-                                    console.log('✅ Found output data in data:', outputData);
                                 }
                                 // Check for result.log and parse it
                                 else if (statusResult.data?.result?.log) {
-                                    console.log('✅ Found log data, parsing products...');
                                     const logText = statusResult.data.result.log;
                                     outputData = parseProductsFromLog(logText);
-                                    console.log('✅ Parsed products from log:', outputData);
                                 }
 
                                 if (outputData) {
-                                    console.log('✅ Setting crawled data:', outputData.length, 'products');
                                     setCrawledData(outputData);
                                     setActiveTab('data'); // Switch to data tab
                                 } else {
-                                    console.log('⚠️ No output data found, calling loadCrawledData...');
                                     // Fallback: call loadCrawledData to get data from other sources
                                     setTimeout(() => {
                                         loadCrawledData();

@@ -35,35 +35,13 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
         setLoadingDetails(true);
         try {
             const apifyService = new ApifyService(platform.apiToken);
-            console.log('=== Loading actor details ===');
-            console.log('Actor ID:', actor.id);
-            console.log('API Token:', platform.apiToken ? 'Present' : 'Missing');
-
             const response = await apifyService.getActor(actor.id);
-            console.log('=== Actor Details API Response ===');
-            console.log('Full response:', response);
-            console.log('Response structure:', {
-                hasData: !!response.data,
-                dataKeys: response.data ? Object.keys(response.data) : 'No data',
-                responseKeys: Object.keys(response)
-            });
-
             // API response có cấu trúc {data: {...}}
             const details = response.data;
-            console.log('Actor details (response.data):', details);
-            console.log('Actor name:', details?.name);
-            console.log('Actor description:', details?.description);
-            console.log('Actor versions:', details?.versions);
-            console.log('Actor stats:', details?.stats);
-            console.log('Actor exampleRunInput:', details?.exampleRunInput);
-
             // Parse input schema từ versions[0].sourceFiles
             let inputSchema = null;
             if (details?.versions && details.versions.length > 0) {
                 const latestVersion = details.versions[0];
-                console.log('Latest version:', latestVersion);
-                console.log('Source files count:', latestVersion.sourceFiles?.length || 0);
-
                 if (latestVersion.sourceFiles) {
                     // Tìm file .actor/input_schema.json
                     const schemaFile = latestVersion.sourceFiles.find(file =>
@@ -71,11 +49,8 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
                     );
 
                     if (schemaFile && schemaFile.content) {
-                        console.log('Found input_schema.json file:', schemaFile.name);
                         try {
                             inputSchema = JSON.parse(schemaFile.content);
-                            console.log('Parsed input schema:', inputSchema);
-                            console.log('Schema properties count:', Object.keys(inputSchema.properties || {}).length);
                         } catch (parseError) {
                             console.error('Error parsing input schema JSON:', parseError);
                         }
@@ -85,8 +60,6 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
                 }
             }
 
-            console.log('=== End Actor Details ===');
-
             setActorDetails(details);
             setInputSchema(inputSchema); // Cập nhật state inputSchema
 
@@ -95,7 +68,6 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
                 let initialInputData = {};
 
                 if (inputSchema && inputSchema.properties) {
-                    console.log('Using input schema to create default values');
                     // Tạo default values từ schema properties
                     Object.entries(inputSchema.properties).forEach(([key, prop]) => {
                         if (prop.default !== undefined) {
@@ -112,22 +84,17 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
                             initialInputData[key] = 0;
                         }
                     });
-                    console.log('Created default values from schema:', initialInputData);
                 } else if (details?.exampleRunInput) {
-                    console.log('Using exampleRunInput from API:', details.exampleRunInput);
                     initialInputData = details.exampleRunInput;
                 } else if (actor.exampleRunInput) {
-                    console.log('Using exampleRunInput from actor list:', actor.exampleRunInput);
                     initialInputData = actor.exampleRunInput;
                 } else {
-                    console.log('No schema or example found, using empty object');
                     initialInputData = {};
                 }
 
                 setInputData(initialInputData);
                 setJsonInput(JSON.stringify(initialInputData, null, 2));
             } else {
-                console.log('Keeping existing input data:', inputData);
                 // Cập nhật JSON input để đồng bộ với input data hiện tại
                 setJsonInput(JSON.stringify(inputData, null, 2));
             }
@@ -182,15 +149,8 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
         setRunResult(null);
 
         try {
-            console.log('=== Starting Actor Run ===');
-            console.log('Actor ID:', actor.id);
-            console.log('Input Data:', inputData);
-            console.log('API Token:', platform.apiToken ? 'Present' : 'Missing');
-
             const apifyService = new ApifyService(platform.apiToken);
             const result = await apifyService.runActor(actor.id, inputData);
-
-            console.log('Run result:', result);
 
             const runId = result.data?.id || result.id;
             const runUrl = result.data?.webUrls?.runDetail || `https://console.apify.com/actors/${actor.id}/runs/${runId}`;

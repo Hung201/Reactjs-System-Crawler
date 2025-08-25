@@ -50,14 +50,6 @@ export const getTokenSource = (platformToken = null) => {
 export const logTokenStatus = (platformToken = null) => {
     const source = getTokenSource(platformToken);
     const isConfigured = isApiTokenConfigured(platformToken);
-
-    console.log('API Token Status:', {
-        configured: isConfigured,
-        source: source,
-        hasPlatformToken: !!platformToken,
-        hasEnvToken: !!process.env.REACT_APP_APIFY_API_TOKEN
-    });
-
     if (!isConfigured) {
         console.warn('To configure API token:');
         console.warn('1. Create .env file in project root');

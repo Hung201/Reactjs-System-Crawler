@@ -9,15 +9,21 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      staleTime: 30000, // 30 seconds
+      cacheTime: 300000, // 5 minutes
+      refetchOnReconnect: false, // Không refetch khi reconnect
+      refetchInterval: false, // Không tự động refetch theo interval
+    },
+    mutations: {
+      retry: 1, // Chỉ retry 1 lần cho mutations
     },
   },
 });
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </React.StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>
 ); 

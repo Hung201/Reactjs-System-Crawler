@@ -4,14 +4,8 @@ import { templatesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
-    console.log('TemplateModal rendered with template:', template);
-    console.log('TemplateModal template.id:', template?.id);
-    console.log('TemplateModal template._id:', template?._id);
-    console.log('TemplateModal isOpen:', isOpen);
     // Step management
     const [currentStep, setCurrentStep] = useState(1);
-    console.log('TemplateModal currentStep:', currentStep);
-
     // Actors and schema
     const [actors, setActors] = useState([]);
     const [selectedActor, setSelectedActor] = useState(null);
@@ -97,15 +91,11 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
 
     // Fetch actor schema
     const fetchActorSchema = useCallback(async (actorId) => {
-        console.log('fetchActorSchema called with actorId:', actorId);
         setIsLoadingSchema(true);
         try {
             const response = await templatesAPI.getActorSchema(actorId);
-            console.log('Actor schema response:', response);
             if (response.success) {
                 setActorSchema(response.data);
-                console.log('Actor schema set:', response.data);
-
                 // Initialize input data with default values
                 const defaultData = {};
                 response.data.schema.fields.forEach(field => {
@@ -206,27 +196,21 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
 
     // Load template data for editing - fetch from API
     useEffect(() => {
-        console.log('TemplateModal useEffect triggered - template:', template, 'isOpen:', isOpen);
         if (template) {
-            console.log('Loading template for editing:', template);
 
             // Check if we have template ID (could be id or _id)
             const templateId = template.id || template._id;
-            console.log('Template ID:', templateId);
 
             if (templateId) {
                 const fetchTemplateData = async () => {
                     setIsLoadingTemplate(true);
                     try {
                         const response = await templatesAPI.getById(templateId);
-                        console.log('Template API response:', response);
 
                         if (response.success) {
                             const templateData = response.data;
-                            console.log('Fetched template data:', templateData);
 
                             const actorId = templateData.actorId?.id || templateData.actorId || '';
-                            console.log('Extracted actorId:', actorId);
 
                             // Set selected actor for UI display
                             if (templateData.actorId) {
@@ -236,7 +220,6 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
                                     type: templateData.actorType || 'web-scraper',
                                     category: templateData.category || 'ecommerce'
                                 };
-                                console.log('Setting selectedActor:', selectedActorData);
                                 setSelectedActor(selectedActorData);
                             }
 
@@ -281,21 +264,17 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
                                     ...templateData.input
                                 }
                             };
-                            console.log('Setting formData:', formDataToSet);
                             setFormData(formDataToSet);
                             setCurrentStep(2); // Start at step 2 for editing
 
                             // Load actor schema for editing
                             if (actorId) {
-                                console.log('Fetching actor schema for:', actorId);
                                 fetchActorSchema(actorId);
                             } else {
-                                console.log('No actorId found, cannot fetch schema');
                             }
                         } else {
                             console.error('Failed to fetch template:', response);
                             // Fallback: use template data directly if API fails
-                            console.log('Using template data directly as fallback');
                             const templateData = template;
                             const actorId = templateData.actorId?.id || templateData.actorId || '';
 
@@ -374,10 +353,8 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
                 fetchTemplateData();
             } else {
                 // If no template ID, use the template data directly
-                console.log('No template ID found, using template data directly');
                 const templateData = template;
                 const actorId = templateData.actorId?.id || templateData.actorId || '';
-                console.log('Extracted actorId from template:', actorId);
 
                 // Set selected actor for UI display
                 if (templateData.actorId) {
@@ -387,7 +364,6 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
                         type: templateData.actorType || 'web-scraper',
                         category: templateData.category || 'ecommerce'
                     };
-                    console.log('Setting selectedActor:', selectedActorData);
                     setSelectedActor(selectedActorData);
                 }
 
@@ -432,16 +408,13 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
                         ...templateData.input
                     }
                 };
-                console.log('Setting formData from template:', formDataToSet);
                 setFormData(formDataToSet);
                 setCurrentStep(2); // Start at step 2 for editing
 
                 // Load actor schema for editing
                 if (actorId) {
-                    console.log('Fetching actor schema for:', actorId);
                     fetchActorSchema(actorId);
                 } else {
-                    console.log('No actorId found, cannot fetch schema');
                 }
             }
         }

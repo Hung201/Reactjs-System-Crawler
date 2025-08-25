@@ -1,22 +1,105 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
+// Improved Rate limiting utility with user-specific limits
+const rateLimiter = {
+    requests: new Map(),
+    userRequests: new Map(), // Track requests per user
+    maxRequests: 100, // Tăng lên 100 requests/phút cho toàn bộ hệ thống
+    maxRequestsPerUser: 30, // 30 requests/phút cho mỗi user
+    timeWindow: 60000, // Trong 1 phút
+
+    canMakeRequest: function (endpoint, userId = null) {
+        const now = Date.now();
+
+        // Global rate limiting
+        const requests = this.requests.get(endpoint) || [];
+        const validRequests = requests.filter(time => now - time < this.timeWindow);
+
+        if (validRequests.length >= this.maxRequests) {
+            console.warn(`Global rate limit exceeded for endpoint: ${endpoint}`);
+            return false;
+        }
+
+        // User-specific rate limiting (if userId provided)
+        if (userId) {
+            const userKey = `${userId}:${endpoint}`;
+            const userRequests = this.userRequests.get(userKey) || [];
+            const validUserRequests = userRequests.filter(time => now - time < this.timeWindow);
+
+            if (validUserRequests.length >= this.maxRequestsPerUser) {
+                console.warn(`User rate limit exceeded for endpoint: ${endpoint}, user: ${userId}`);
+                return false;
+            }
+
+            validUserRequests.push(now);
+            this.userRequests.set(userKey, validUserRequests);
+        }
+
+        validRequests.push(now);
+        this.requests.set(endpoint, validRequests);
+        return true;
+    },
+
+    // Cleanup old entries to prevent memory leaks
+    cleanup: function () {
+        const now = Date.now();
+
+        // Cleanup global requests
+        for (const [endpoint, requests] of this.requests.entries()) {
+            const validRequests = requests.filter(time => now - time < this.timeWindow);
+            if (validRequests.length === 0) {
+                this.requests.delete(endpoint);
+            } else {
+                this.requests.set(endpoint, validRequests);
+            }
+        }
+
+        // Cleanup user requests
+        for (const [userKey, requests] of this.userRequests.entries()) {
+            const validRequests = requests.filter(time => now - time < this.timeWindow);
+            if (validRequests.length === 0) {
+                this.userRequests.delete(userKey);
+            } else {
+                this.userRequests.set(userKey, validRequests);
+            }
+        }
+    }
+};
+
+// Cleanup every 5 minutes to prevent memory leaks
+setInterval(() => {
+    rateLimiter.cleanup();
+}, 5 * 60 * 1000);
+
 // Tạo instance axios
 const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
     timeout: 10000,
 });
 
-// Interceptor để thêm token vào header
+// Interceptor để thêm token vào header và rate limiting
 api.interceptors.request.use(
     (config) => {
         const token = useAuthStore.getState().token;
+        const user = useAuthStore.getState().user;
+        const userId = user?.id || user?._id;
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // Rate limiting check with user ID
+        const endpoint = `${config.method}:${config.url}`;
+        if (!rateLimiter.canMakeRequest(endpoint, userId)) {
+            console.warn(`Rate limit exceeded for: ${endpoint}, user: ${userId}`);
+            return Promise.reject(new Error('Rate limit exceeded. Please wait before making another request.'));
+        }
+
         return config;
     },
     (error) => {
+        console.error('API Request Error:', error);
         return Promise.reject(error);
     }
 );
@@ -24,10 +107,64 @@ api.interceptors.request.use(
 // Interceptor để xử lý response
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        console.error('API Response Error:', error);
+        console.error('Error details:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+
+        // Handle rate limiting with retry logic
+        if (error.message === 'Rate limit exceeded. Please wait before making another request.') {
+            // Don't retry rate limit errors - let the user handle it
+            console.warn('Rate limit hit, not retrying');
+            return Promise.reject(error);
+        }
+
+        // Handle 429 (Too Many Requests) from server
+        if (error.response?.status === 429) {
+            const retryAfter = error.response.headers['retry-after'];
+            const delay = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
+
+            console.warn(`Server rate limit hit, retrying after ${delay}ms`);
+
+            // Wait and retry once
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            // Retry the request
+            try {
+                const config = error.config;
+                return await api.request(config);
+            } catch (retryError) {
+                console.error('Retry failed:', retryError);
+                return Promise.reject(retryError);
+            }
+        }
+
+        // Handle 401 (Unauthorized)
         if (error.response?.status === 401) {
             useAuthStore.getState().logout();
         }
+
+        // Handle other errors with exponential backoff (max 3 retries)
+        if (error.config && !error.config._retry && error.config._retryCount < 3) {
+            error.config._retry = true;
+            error.config._retryCount = (error.config._retryCount || 0) + 1;
+
+            const delay = Math.pow(2, error.config._retryCount) * 1000; // 2s, 4s, 8s
+            console.warn(`Retrying request (${error.config._retryCount}/3) after ${delay}ms`);
+
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            try {
+                return await api.request(error.config);
+            } catch (retryError) {
+                console.error(`Retry ${error.config._retryCount} failed:`, retryError);
+                return Promise.reject(retryError);
+            }
+        }
+
         return Promise.reject(error);
     }
 );
@@ -81,7 +218,10 @@ export const actorsAPI = {
     getById: (id) => api.get(`/actors/${id}`),
     upload: (data) => api.post('/actors', data),
     update: (id, data) => api.put(`/actors/${id}`, data),
-    delete: (id) => api.delete(`/actors/${id}`),
+    delete: (id) => api.delete(`/actors/${id}`).catch(error => {
+        console.error('Actor delete API error:', error);
+        throw error;
+    }),
 
     // File-based storage APIs (new endpoints)
     saveFile: (actorId, filePath, content) =>
@@ -306,31 +446,20 @@ export const platformsAPI = {
     // Cập nhật platform
     update: async (id, platformData) => {
         try {
-            console.log('=== PLATFORM UPDATE API CALL ===');
-            console.log('URL:', `/platforms/${id}`);
-            console.log('Method: PUT');
-            console.log('Data:', platformData);
-
             // Try PUT first
             try {
                 const response = await api.put(`/platforms/${id}`, platformData);
-                console.log('Update API response (PUT):', response.data);
                 return response.data;
             } catch (putError) {
-                console.log('PUT failed, trying POST with _method override...');
-
                 // Fallback: Use POST with _method override if PUT is not supported
                 const response = await api.post(`/platforms/${id}`, {
                     ...platformData,
                     _method: 'PUT'
                 });
-                console.log('Update API response (POST with _method):', response.data);
                 return response.data;
             }
         } catch (error) {
             console.error('Update platform API error:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
             throw error;
         }
     },

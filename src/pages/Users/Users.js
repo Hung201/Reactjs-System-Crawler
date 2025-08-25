@@ -91,9 +91,6 @@ const Users = () => {
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
-  // Debug: Log the structure of users data
-  console.log('Users data structure:', users);
-
   // Handle different response structures
   let filteredUsers = [];
   let pagination = null;
@@ -110,8 +107,6 @@ const Users = () => {
     // If response is directly an array
     filteredUsers = users;
   }
-
-  console.log('Filtered users:', filteredUsers);
 
   return (
     <div className="space-y-6">
@@ -140,7 +135,7 @@ const Users = () => {
               placeholder="Tìm kiếm người dùng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
+              className="search-input"
             />
           </div>
 

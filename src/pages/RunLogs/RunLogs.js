@@ -42,14 +42,14 @@ const RunLogs = () => {
 
   const formatDuration = (startTime, endTime) => {
     if (!startTime || !endTime) return 'N/A';
-    
+
     const start = new Date(startTime);
     const end = new Date(endTime);
     const duration = end - start;
-    
+
     const minutes = Math.floor(duration / 60000);
     const seconds = Math.floor((duration % 60000) / 1000);
-    
+
     return `${minutes}m ${seconds}s`;
   };
 
@@ -73,10 +73,10 @@ const RunLogs = () => {
               placeholder="Tìm kiếm log..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
+              className="search-input"
             />
           </div>
-          
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -164,7 +164,7 @@ const RunLogs = () => {
                     </td>
                     <td className="table-cell">
                       <span className="text-sm text-gray-500">
-                        {log.startTime 
+                        {log.startTime
                           ? new Date(log.startTime).toLocaleString('vi-VN')
                           : 'N/A'
                         }
@@ -172,7 +172,7 @@ const RunLogs = () => {
                     </td>
                     <td className="table-cell">
                       <span className="text-sm text-gray-500">
-                        {log.endTime 
+                        {log.endTime
                           ? new Date(log.endTime).toLocaleString('vi-VN')
                           : 'N/A'
                         }

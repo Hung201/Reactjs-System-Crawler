@@ -7,6 +7,7 @@ import { ACTOR_STATUS_LABELS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 import UploadActorModal from '../../components/ActorUploads/UploadActorModal';
+
 import { useAuthStore } from '../../stores/authStore';
 
 const ActorUploads = () => {
@@ -16,6 +17,7 @@ const ActorUploads = () => {
   const [actorToDelete, setActorToDelete] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
+
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -23,23 +25,16 @@ const ActorUploads = () => {
     queryKey: ['actors', { search: searchTerm, status: statusFilter }],
     queryFn: () => actorsAPI.getAll({ search: searchTerm, status: statusFilter }),
     retry: 1,
-    staleTime: 0, // Force refetch
-    cacheTime: 0, // Disable cache
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    staleTime: 30000, // 30 seconds
+    cacheTime: 300000, // 5 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     onError: (error) => {
       console.error('Actors API error:', error);
       console.error('Error details:', error.response?.data);
     },
     onSuccess: (data) => {
-      console.log('=== ACTORS API SUCCESS ===');
-      console.log('Full response:', data);
-      console.log('data type:', typeof data);
-      console.log('data keys:', Object.keys(data || {}));
-      console.log('data.data:', data?.data);
-      console.log('data.data type:', typeof data?.data);
-      console.log('data.data length:', data?.data?.length);
-      console.log('data.data[0]:', data?.data?.[0]);
+      console.log('Actors loaded successfully:', data);
     }
   });
 
@@ -58,22 +53,45 @@ const ActorUploads = () => {
     mutationFn: (id) => actorsAPI.delete(id),
     onSuccess: () => {
       toast.success('Actor đã được xóa!');
+      // Invalidate và refetch data
       queryClient.invalidateQueries(['actors']);
+      // Thêm delay nhỏ để tránh race condition
+      setTimeout(() => {
+        queryClient.refetchQueries(['actors']);
+      }, 100);
       setShowDeleteModal(false);
       setActorToDelete(null);
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Không thể xóa actor');
+      console.error('Delete actor error:', error);
+      console.error('Error details:', error.response?.data);
+
+      // Kiểm tra loại lỗi
+      if (error.response?.status === 429) {
+        toast.error('Quá nhiều yêu cầu. Vui lòng thử lại sau.');
+      } else if (error.response?.status === 404) {
+        toast.error('Actor không tồn tại hoặc đã bị xóa.');
+      } else if (error.response?.status === 500) {
+        toast.error('Lỗi server. Vui lòng thử lại sau.');
+      } else {
+        toast.error(error.response?.data?.message || 'Không thể xóa actor');
+      }
+
+      setShowDeleteModal(false);
+      setActorToDelete(null);
     },
   });
 
   const handleDelete = (actor) => {
-    setActorToDelete(actor);
-    setShowDeleteModal(true);
+    if (!deleteMutation.isLoading) {
+      setActorToDelete(actor);
+      setShowDeleteModal(true);
+    }
   };
 
   const confirmDelete = () => {
-    if (actorToDelete) {
+    if (actorToDelete && !deleteMutation.isLoading) {
+      console.log('Deleting actor:', actorToDelete._id);
       deleteMutation.mutate(actorToDelete._id);
     }
   };
@@ -130,50 +148,15 @@ const ActorUploads = () => {
       }
     ] : []);
 
-  // Debug logs
-  console.log('=== REACT QUERY DEBUG ===');
-  console.log('actors response:', actors);
-  console.log('actors type:', typeof actors);
-  console.log('actors keys:', Object.keys(actors || {}));
-  console.log('actors?.data:', actors?.data);
-  console.log('actors?.data type:', typeof actors?.data);
-  console.log('actors?.data length:', actors?.data?.length);
-  console.log('actors?.data?.data:', actors?.data?.data);
-  console.log('actors?.data?.data type:', typeof actors?.data?.data);
-  console.log('actors?.data?.data length:', actors?.data?.data?.length);
-  console.log('actorsData:', actorsData);
-  console.log('actorsData type:', typeof actorsData);
-  console.log('actorsData length:', actorsData?.length);
-  console.log('filteredActors:', filteredActors);
-  console.log('filteredActors type:', typeof filteredActors);
-  console.log('filteredActors length:', filteredActors?.length);
-  console.log('isLoading:', isLoading);
-  console.log('error:', error);
+
 
   // Check auth token
   const token = useAuthStore.getState().token;
-  console.log('Auth token:', token ? 'Present' : 'Missing');
-  console.log('Is authenticated:', useAuthStore.getState().isAuthenticated);
 
-  // Debug rendering conditions
-  console.log('filteredActors.length:', filteredActors.length);
-  console.log('!isLoading:', !isLoading);
-  console.log('!error:', !error);
-  console.log('Show empty message:', filteredActors.length === 0 && !isLoading && !error);
-
-  // Force re-render when data changes
+  // Force invalidate cache on mount only once
   useEffect(() => {
-    console.log('=== USE EFFECT TRIGGERED ===');
-    console.log('actors changed:', actors);
-    console.log('filteredActors in useEffect:', filteredActors);
-    console.log('filteredActors.length in useEffect:', filteredActors?.length);
-  }, [actors, filteredActors]);
-
-  // Force invalidate cache on mount
-  useEffect(() => {
-    console.log('=== COMPONENT MOUNTED ===');
     queryClient.invalidateQueries(['actors']);
-  }, []);
+  }, [queryClient]);
 
   return (
     <div className="space-y-6" key={`actors-${filteredActors.length}-${isLoading}`}>
@@ -211,7 +194,7 @@ const ActorUploads = () => {
               placeholder="Tìm kiếm actor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
+              className="search-input"
             />
           </div>
 
@@ -237,6 +220,8 @@ const ActorUploads = () => {
           </button>
         </div>
       </div>
+
+
 
       {/* Actors Table */}
       <div className="card">
@@ -333,7 +318,8 @@ const ActorUploads = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(actor)}
-                          className="p-1 text-red-600 hover:text-red-800"
+                          disabled={deleteMutation.isLoading}
+                          className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Xóa"
                         >
                           <Trash2 size={16} />
@@ -372,14 +358,17 @@ const ActorUploads = () => {
       <ConfirmModal
         isOpen={showDeleteModal}
         onClose={() => {
-          setShowDeleteModal(false);
-          setActorToDelete(null);
+          if (!deleteMutation.isLoading) {
+            setShowDeleteModal(false);
+            setActorToDelete(null);
+          }
         }}
         onConfirm={confirmDelete}
         title="Xóa Actor"
         message={`Bạn có chắc chắn muốn xóa actor "${actorToDelete?.actorName}"?`}
-        confirmText="Xóa"
+        confirmText={deleteMutation.isLoading ? "Đang xóa..." : "Xóa"}
         cancelText="Hủy"
+        isLoading={deleteMutation.isLoading}
       />
 
       {/* Upload Actor Modal */}

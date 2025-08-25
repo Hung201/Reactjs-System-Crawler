@@ -4,10 +4,6 @@ import { ExternalLink, Eye } from 'lucide-react';
 import { DATA_TYPE_LABELS, DATA_STATUS_LABELS } from '../../utils/constants';
 
 const RecentDataTable = ({ data, isLoading, error }) => {
-  console.log('RecentDataTable - data:', data);
-  console.log('RecentDataTable - data type:', typeof data);
-  console.log('RecentDataTable - isArray:', Array.isArray(data));
-
   if (isLoading) {
     return (
       <div className="animate-pulse">

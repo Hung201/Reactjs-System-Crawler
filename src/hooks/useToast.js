@@ -1,69 +1,86 @@
-import { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 
-export const useToast = () => {
-    const [toast, setToast] = useState({
-        isVisible: false,
-        message: '',
-        type: 'success'
-    });
-
-    const timeoutRef = useRef(null);
-
-    const showToast = (message, type = 'success', duration = 3000) => {
-        // Clear existing timeout
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-        }
-
-        setToast({
-            isVisible: true,
-            message,
-            type
+const useToast = () => {
+    const showSuccess = (message) => {
+        toast.success(message, {
+            duration: 4000,
+            position: 'top-right',
         });
-
-        // Set timeout to hide toast
-        if (duration > 0) {
-            timeoutRef.current = setTimeout(() => {
-                hideToast();
-            }, duration);
-        }
     };
 
-    const hideToast = () => {
-        setToast(prev => ({
-            ...prev,
-            isVisible: false
-        }));
-
-        // Clear timeout
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
+    const showError = (message, error = null) => {
+        // Handle rate limiting errors specifically
+        if (error?.message?.includes('Rate limit exceeded') || error?.response?.status === 429) {
+            toast.error('Quá nhiều yêu cầu. Vui lòng chờ một chút trước khi thử lại.', {
+                duration: 6000,
+                position: 'top-right',
+                icon: '⏰',
+            });
+            return;
         }
+
+        // Handle network errors
+        if (error?.message?.includes('Network Error') || error?.code === 'NETWORK_ERROR') {
+            toast.error('Lỗi kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.', {
+                duration: 5000,
+                position: 'top-right',
+                icon: '🌐',
+            });
+            return;
+        }
+
+        // Handle timeout errors
+        if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+            toast.error('Yêu cầu bị timeout. Vui lòng thử lại.', {
+                duration: 5000,
+                position: 'top-right',
+                icon: '⏱️',
+            });
+            return;
+        }
+
+        // Default error handling
+        toast.error(message || 'Đã xảy ra lỗi. Vui lòng thử lại.', {
+            duration: 5000,
+            position: 'top-right',
+        });
     };
 
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, []);
+    const showWarning = (message) => {
+        toast(message, {
+            duration: 4000,
+            position: 'top-right',
+            icon: '⚠️',
+        });
+    };
 
-    const showSuccess = (message, duration = 3000) => showToast(message, 'success', duration);
-    const showError = (message, duration = 5000) => showToast(message, 'error', duration);
-    const showWarning = (message, duration = 4000) => showToast(message, 'warning', duration);
-    const showInfo = (message, duration = 3000) => showToast(message, 'info', duration);
+    const showInfo = (message) => {
+        toast(message, {
+            duration: 4000,
+            position: 'top-right',
+            icon: 'ℹ️',
+        });
+    };
+
+    const showLoading = (message) => {
+        return toast.loading(message, {
+            position: 'top-right',
+        });
+    };
+
+    const dismiss = (toastId) => {
+        toast.dismiss(toastId);
+    };
 
     return {
         toast,
-        showToast,
-        hideToast,
         showSuccess,
         showError,
         showWarning,
-        showInfo
+        showInfo,
+        showLoading,
+        dismiss,
+        hideToast: dismiss, // Alias for backward compatibility
     };
 };
 

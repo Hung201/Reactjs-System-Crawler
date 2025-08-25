@@ -1,6 +1,6 @@
 # System Crawler Frontend
 
-Frontend cho hệ thống crawl dữ liệu giống Apify - Quản lý và thu thập dữ liệu từ nhiều nguồn.
+Frontend cho Hệ thống quản trị Crawl nội bộ - Quản lý và thu thập dữ liệu từ nhiều nguồn.
 
 ## 🚀 Tính năng chính
 

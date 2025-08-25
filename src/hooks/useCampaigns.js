@@ -8,6 +8,7 @@ export const useCampaigns = (token) => {
     const [error, setError] = useState(null);
     const [updateSuccess, setUpdateSuccess] = useState(null);
     const [runningCampaigns, setRunningCampaigns] = useState(new Set());
+    const [pagination, setPagination] = useState(null);
 
     const campaignService = new CampaignService(token);
 
@@ -18,12 +19,12 @@ export const useCampaigns = (token) => {
         return /^[0-9a-fA-F]{24}$/.test(id);
     };
 
-    // Load campaigns từ API
-    const fetchCampaigns = async () => {
+    // Load campaigns từ API với pagination
+    const fetchCampaigns = async (params = {}) => {
         try {
             setLoading(true);
             setError(null);
-            const result = await campaignService.getCampaigns();
+            const result = await campaignService.getCampaigns(params);
             if (result.success) {
                 // Ensure all campaigns have the correct structure
                 const normalizedCampaigns = (result.data || []).map(campaign => ({
@@ -51,6 +52,11 @@ export const useCampaigns = (token) => {
                     stats: campaign.stats
                 }));
                 setCampaigns(normalizedCampaigns);
+
+                // Set pagination data if available
+                if (result.pagination) {
+                    setPagination(result.pagination);
+                }
             } else {
                 setError(result.message || 'Không thể tải danh sách campaigns');
             }
@@ -58,7 +64,6 @@ export const useCampaigns = (token) => {
             console.error('Error fetching campaigns:', error);
             // Fallback to mock data if API is not available
             if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-                console.log('Using mock data for campaigns');
                 const mockCampaigns = [
                     {
                         id: '1',
@@ -91,8 +96,14 @@ export const useCampaigns = (token) => {
                         averageRunTime: '8 phút'
                     }
                 ];
-                console.log('Using mock campaigns:', mockCampaigns);
                 setCampaigns(mockCampaigns);
+                // Set mock pagination
+                setPagination({
+                    page: 1,
+                    limit: 10,
+                    total: mockCampaigns.length,
+                    pages: 1
+                });
             } else {
                 setError('Lỗi kết nối server');
             }
@@ -103,7 +114,9 @@ export const useCampaigns = (token) => {
 
     // Load campaigns khi component mount
     useEffect(() => {
-        fetchCampaigns();
+        if (token) {
+            fetchCampaigns();
+        }
     }, [token]);
 
     // Tính toán thống kê từ backend stats và campaign data
@@ -150,6 +163,8 @@ export const useCampaigns = (token) => {
         fetchCampaigns,
         calculateStats,
         isValidObjectId,
-        campaignService
+        campaignService,
+        pagination,
+        setPagination
     };
 };

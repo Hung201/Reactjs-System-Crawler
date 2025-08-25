@@ -127,11 +127,9 @@ const ActorEditor = () => {
     // Real API mutations - File-based approach
     const saveSourceMutation = useMutation({
         mutationFn: ({ actorId, filePath, content }) => {
-            console.log('Calling saveFile API:', { actorId, filePath, contentLength: content?.length });
             return actorsAPI.saveFile(actorId, filePath, content);
         },
         onSuccess: (data) => {
-            console.log('Save to file system success:', data);
             toast.success('Đã lưu thành công vào file system!');
             setIsEditing(false);
             queryClient.invalidateQueries(['actor', id]);
@@ -146,7 +144,6 @@ const ActorEditor = () => {
     const buildActorMutation = useMutation({
         mutationFn: (actorId) => actorsAPI.build(actorId),
         onSuccess: (data) => {
-            console.log('Build success:', data);
             toast.success('Actor đã được build thành công!');
             queryClient.invalidateQueries(['actor', id]);
             // Show build logs after successful build
@@ -162,7 +159,6 @@ const ActorEditor = () => {
     const runActorMutation = useMutation({
         mutationFn: ({ actorId, input }) => actorsAPI.run(actorId, input),
         onSuccess: (data) => {
-            console.log('Run success:', data);
             toast.success('Actor đã được chạy thành công!');
             queryClient.invalidateQueries(['actor', id]);
             // Show run logs after successful run
@@ -189,7 +185,6 @@ const ActorEditor = () => {
                 }
 
                 const text = decoder.decode(value);
-                console.log('Actor output:', text);
                 setOutputStream(prev => prev + text);
 
                 // Continue reading
@@ -243,7 +238,6 @@ const ActorEditor = () => {
                     localStorage.setItem(localStorageKey, content);
                     return;
                 } catch (error) {
-                    console.log('File not found in file system, using default content');
                 }
             };
 
@@ -414,28 +408,23 @@ CMD [ "npm", "start" ]`
     // Test file-based storage function
     const testFileBasedStorage = async () => {
         try {
-            console.log('Testing file-based storage...');
 
             // Test 1: Save a test file
             const testContent = `// Test file created at ${new Date().toISOString()}
 console.log('Hello from test file!');`;
 
             const saveResult = await actorsAPI.saveFile(id, 'test.js', testContent);
-            console.log('Save test result:', saveResult);
 
             // Test 2: Read the test file back
             const readResult = await actorsAPI.getFile(id, 'test.js');
-            console.log('Read test result:', readResult);
 
             // Test 3: Verify content matches
             if (readResult.data.content === testContent) {
-                console.log('✅ File-based storage test PASSED');
                 toast.success('File-based storage hoạt động tốt!');
 
                 // Test 4: Test build API
                 try {
                     const buildResult = await actorsAPI.build(id);
-                    console.log('Build test result:', buildResult);
                     toast.success('Build API cũng hoạt động tốt!');
                 } catch (buildError) {
                     console.log('Build test failed (expected if no Docker):', buildError);
@@ -471,8 +460,6 @@ console.log('Hello from test file!');`;
 
     // Handle save - File-based approach
     const handleSave = () => {
-        console.log('Save button clicked', { selectedFile, fileContent: fileContent?.substring(0, 100) + '...' });
-
         if (!selectedFile) {
             toast.error('Không có file nào được chọn');
             return;
@@ -493,7 +480,6 @@ console.log('Hello from test file!');`;
             // Save to localStorage for persistence (all files)
             const localStorageKey = `actor_${id}_${selectedFile}`;
             localStorage.setItem(localStorageKey, fileContent);
-            console.log('Saved to localStorage:', localStorageKey);
 
             // Also save to localStorage for build process (main.js)
             if (selectedFile === 'main.js') {
@@ -510,7 +496,6 @@ console.log('Hello from test file!');`;
                 content: fileContent
             }, {
                 onSuccess: () => {
-                    console.log('Save to file system successful');
                     toast.success('Đã lưu thành công vào file system!');
                     setIsEditing(false);
                 },

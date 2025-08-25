@@ -14,7 +14,6 @@ const Login = () => {
   // Theo dõi khi đăng nhập thành công
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('isAuthenticated changed to true, redirecting...');
       const from = location.state?.from?.pathname || '/dashboard';
       // Force reload để đảm bảo state được update
       window.location.href = from;
@@ -28,9 +27,7 @@ const Login = () => {
   } = useForm();
 
   const onSubmit = async (data) => {
-    console.log('Đang đăng nhập với:', data.email);
     const result = await login(data.email, data.password);
-    console.log('Kết quả đăng nhập:', result);
 
     if (result.success) {
       toast.success('Đăng nhập thành công! Chào mừng bạn trở lại!');
@@ -51,7 +48,7 @@ const Login = () => {
             Đăng nhập vào hệ thống
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Hệ thống Crawl Dữ liệu giống Apify
+            Hệ thống quản trị Crawl nội bộ
           </p>
         </div>
 
@@ -164,16 +161,6 @@ const Login = () => {
             </p>
           </div>
         </form>
-
-        {/* Demo credentials */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Tài khoản demo:</h3>
-          <div className="text-xs text-gray-600 space-y-1">
-            <p><strong>Admin:</strong> admin@example.com / password123</p>
-            <p><strong>Editor:</strong> editor@example.com / password123</p>
-            <p><strong>Viewer:</strong> viewer@example.com / password123</p>
-          </div>
-        </div>
       </div>
     </div>
   );

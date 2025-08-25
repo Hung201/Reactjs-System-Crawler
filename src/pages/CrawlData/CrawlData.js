@@ -18,7 +18,6 @@ const CrawlData = () => {
   const { data: crawlData, isLoading, error, refetch } = useQuery({
     queryKey: ['crawl-data', { search: searchTerm, status: statusFilter, type: typeFilter, source: sourceFilter, page: currentPage }],
     queryFn: async () => {
-      console.log('🔍 Fetching crawl data with params:', { search: searchTerm, status: statusFilter, type: typeFilter, source: sourceFilter, page: currentPage });
       try {
         const response = await dataAPI.getAll({
           search: searchTerm,
@@ -28,10 +27,6 @@ const CrawlData = () => {
           page: currentPage,
           limit: 20
         });
-        console.log('✅ API Response:', response);
-        console.log('✅ Response data:', response.data);
-        console.log('✅ Response data.data:', response.data?.data);
-        console.log('✅ Response pagination:', response.data?.pagination);
         return response;
       } catch (error) {
         console.error('❌ API Error:', error);
@@ -125,10 +120,7 @@ const CrawlData = () => {
 
   const handleDebugAPI = async () => {
     try {
-      console.log('🔍 Testing API directly...');
       const response = await dataAPI.getAll({ page: 1, limit: 20 });
-      console.log('✅ Direct API call result:', response);
-      console.log('✅ Direct response data:', response.data);
       alert(`API Response: ${JSON.stringify(response, null, 2)}`);
     } catch (error) {
       console.error('❌ Direct API call error:', error);
@@ -139,11 +131,6 @@ const CrawlData = () => {
   // Get data from correct structure
   const products = Array.isArray(crawlData?.data?.data) ? crawlData.data.data : [];
   const pagination = crawlData?.data?.pagination || {};
-
-  console.log('🔍 CrawlData component render:');
-  console.log('🔍 crawlData:', crawlData);
-  console.log('🔍 products:', products);
-  console.log('🔍 pagination:', pagination);
 
   // Pagination functions
   const handlePageChange = (page) => {
@@ -263,24 +250,6 @@ const CrawlData = () => {
         </div>
       )}
 
-      {/* Raw Data Debug */}
-      {crawlData && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <Database className="w-5 h-5 text-blue-500 mt-0.5 mr-3" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-blue-800 mb-2">Raw API Response</h3>
-              <div className="text-xs text-blue-700 space-y-1">
-                <p><strong>Response structure:</strong> {JSON.stringify(Object.keys(crawlData), null, 2)}</p>
-                <p><strong>Data structure:</strong> {crawlData.data ? JSON.stringify(Object.keys(crawlData.data), null, 2) : 'No data'}</p>
-                <p><strong>Products count:</strong> {products.length}</p>
-                <p><strong>Pagination:</strong> {JSON.stringify(pagination, null, 2)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
       <div className="card">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -291,7 +260,7 @@ const CrawlData = () => {
               placeholder="Tìm kiếm dữ liệu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
+              className="search-input"
             />
           </div>
 

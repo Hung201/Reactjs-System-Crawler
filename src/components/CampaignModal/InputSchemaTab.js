@@ -1,11 +1,39 @@
 import React from 'react';
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import ElementSelector from '../Common/ElementSelector';
+
+// Component con để tái sử dụng cho các input selector
+const SelectorInput = ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    description
+}) => {
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+                {label}
+            </label>
+            <ElementSelector
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                compact={true}
+            />
+            {description && (
+                <p className="text-xs text-gray-500 mt-1">{description}</p>
+            )}
+        </div>
+    );
+};
 
 const InputSchemaTab = ({
     inputMode,
     setInputMode,
     jsonInput,
     handleJsonInputChange,
+    handleInputModeChange,
     getSchemaValue,
     handleSchemaChange,
     collapsedSections,
@@ -44,7 +72,8 @@ const InputSchemaTab = ({
                 <h3 className="text-lg font-medium text-gray-900">Input Schema</h3>
                 <div className="flex space-x-2">
                     <button
-                        onClick={() => setInputMode('manual')}
+                        type="button"
+                        onClick={() => handleInputModeChange('manual')}
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${inputMode === 'manual'
                             ? 'bg-primary-100 text-primary-700'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -53,7 +82,8 @@ const InputSchemaTab = ({
                         Manual
                     </button>
                     <button
-                        onClick={() => setInputMode('json')}
+                        type="button"
+                        onClick={() => handleInputModeChange('json')}
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${inputMode === 'json'
                             ? 'bg-primary-100 text-primary-700'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -66,15 +96,37 @@ const InputSchemaTab = ({
 
             {inputMode === 'json' ? (
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Input Schema JSON
-                    </label>
+                    <div className="mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Input Data JSON
+                        </label>
+                    </div>
+
+                    {/* Thông tin hướng dẫn */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <div className="flex items-start">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h4 className="text-sm font-medium text-blue-800">Thông tin về Input Data JSON</h4>
+                                <div className="mt-1 text-sm text-blue-700">
+                                    <p>• Đây là dữ liệu input thực tế sẽ được gửi về API</p>
+                                    <p>• Bạn có thể chỉnh sửa trực tiếp JSON này</p>
+                                    <p>• Khi chuyển về Manual mode, các thay đổi sẽ được áp dụng</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <textarea
                         value={jsonInput}
                         onChange={(e) => handleJsonInputChange(e.target.value)}
                         rows={20}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="Paste your input schema JSON here..."
+                        placeholder="Paste your input data JSON here..."
                     />
                 </div>
             ) : (
@@ -117,6 +169,7 @@ const InputSchemaTab = ({
                     {/* Pagination Section */}
                     <div className="bg-gray-50 rounded-lg p-4">
                         <button
+                            type="button"
                             onClick={() => toggleSection('pagination')}
                             className="flex items-center justify-between w-full mb-4"
                         >
@@ -167,6 +220,7 @@ const InputSchemaTab = ({
                     {/* Selectors Section */}
                     <div className="bg-gray-50 rounded-lg p-4">
                         <button
+                            type="button"
                             onClick={() => toggleSection('selectors')}
                             className="flex items-center justify-between w-full mb-4"
                         >
@@ -177,111 +231,63 @@ const InputSchemaTab = ({
                         {!collapsedSections.selectors && (
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Product Link Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('productLinkSelector', '')}
-                                            onChange={(e) => handleSchemaChange('productLinkSelector', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder=".list-item-img a"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Title Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('titleClass', '')}
-                                            onChange={(e) => handleSchemaChange('titleClass', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder=".product-detail_title h1"
-                                        />
-                                    </div>
+                                    <SelectorInput
+                                        label="Product Link Selector"
+                                        value={getSchemaValue('productLinkSelector', '')}
+                                        onChange={(value) => handleSchemaChange('productLinkSelector', value)}
+                                        placeholder=".list-item-img a"
+                                    />
+                                    <SelectorInput
+                                        label="Title Selector"
+                                        value={getSchemaValue('titleClass', '')}
+                                        onChange={(value) => handleSchemaChange('titleClass', value)}
+                                        placeholder=".product-detail_title h1"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Price Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('priceClass', '')}
-                                            onChange={(e) => handleSchemaChange('priceClass', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder=".price"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            SKU Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('skuClass', '')}
-                                            onChange={(e) => handleSchemaChange('skuClass', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder="Leave empty for auto-generate"
-                                        />
-                                    </div>
+                                    <SelectorInput
+                                        label="Price Selector"
+                                        value={getSchemaValue('priceClass', '')}
+                                        onChange={(value) => handleSchemaChange('priceClass', value)}
+                                        placeholder=".price"
+                                    />
+                                    <SelectorInput
+                                        label="SKU Selector"
+                                        value={getSchemaValue('skuClass', '')}
+                                        onChange={(value) => handleSchemaChange('skuClass', value)}
+                                        placeholder="Leave empty for auto-generate"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Description Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('descriptionClass', '')}
-                                            onChange={(e) => handleSchemaChange('descriptionClass', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder=".product-attribute"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Content Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('contentClass', '')}
-                                            onChange={(e) => handleSchemaChange('contentClass', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder=".description-info"
-                                        />
-                                    </div>
+                                    <SelectorInput
+                                        label="Description Selector"
+                                        value={getSchemaValue('descriptionClass', '')}
+                                        onChange={(value) => handleSchemaChange('descriptionClass', value)}
+                                        placeholder=".product-attribute"
+                                    />
+                                    <SelectorInput
+                                        label="Content Selector"
+                                        value={getSchemaValue('contentClass', '')}
+                                        onChange={(value) => handleSchemaChange('contentClass', value)}
+                                        placeholder=".description-info"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Thumbnail Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('thumbnailClass', '')}
-                                            onChange={(e) => handleSchemaChange('thumbnailClass', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder=".image-slider-item img"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Images Selector
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={getSchemaValue('imagesClass', '')}
-                                            onChange={(e) => handleSchemaChange('imagesClass', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder=".thumb-slider .swiper-container .swiper-wrapper .swiper-slide"
-                                        />
-                                    </div>
+                                    <SelectorInput
+                                        label="Thumbnail Selector"
+                                        value={getSchemaValue('thumbnailClass', '')}
+                                        onChange={(value) => handleSchemaChange('thumbnailClass', value)}
+                                        placeholder=".image-slider-item img"
+                                    />
+                                    <SelectorInput
+                                        label="Images Selector"
+                                        value={getSchemaValue('imagesClass', '')}
+                                        onChange={(value) => handleSchemaChange('imagesClass', value)}
+                                        placeholder=".thumb-slider .swiper-container .swiper-wrapper .swiper-slide"
+                                    />
                                 </div>
                             </div>
                         )}
@@ -290,6 +296,7 @@ const InputSchemaTab = ({
                     {/* Product Link Patterns Section */}
                     <div className="bg-gray-50 rounded-lg p-4">
                         <button
+                            type="button"
                             onClick={() => toggleSection('productPatterns')}
                             className="flex items-center justify-between w-full mb-4"
                         >
@@ -314,6 +321,7 @@ const InputSchemaTab = ({
                                                 placeholder="gach-"
                                             />
                                             <button
+                                                type="button"
                                                 onClick={() => removeArrayItem('productLinkIncludePatterns', index)}
                                                 className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                                             >
@@ -322,6 +330,7 @@ const InputSchemaTab = ({
                                         </div>
                                     ))}
                                     <button
+                                        type="button"
                                         onClick={() => addArrayItem('productLinkIncludePatterns', '')}
                                         className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
                                     >
@@ -345,6 +354,7 @@ const InputSchemaTab = ({
                                                 placeholder="gioi-thieu"
                                             />
                                             <button
+                                                type="button"
                                                 onClick={() => removeArrayItem('productLinkExcludePatterns', index)}
                                                 className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                                             >
@@ -353,6 +363,7 @@ const InputSchemaTab = ({
                                         </div>
                                     ))}
                                     <button
+                                        type="button"
                                         onClick={() => addArrayItem('productLinkExcludePatterns', '')}
                                         className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
                                     >
@@ -367,6 +378,7 @@ const InputSchemaTab = ({
                     {/* Image Patterns Section */}
                     <div className="bg-gray-50 rounded-lg p-4">
                         <button
+                            type="button"
                             onClick={() => toggleSection('imagePatterns')}
                             className="flex items-center justify-between w-full mb-4"
                         >
@@ -391,6 +403,7 @@ const InputSchemaTab = ({
                                                 placeholder="product"
                                             />
                                             <button
+                                                type="button"
                                                 onClick={() => removeArrayItem('includePatterns', index)}
                                                 className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                                             >
@@ -399,6 +412,7 @@ const InputSchemaTab = ({
                                         </div>
                                     ))}
                                     <button
+                                        type="button"
                                         onClick={() => addArrayItem('includePatterns', '')}
                                         className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
                                     >
@@ -422,6 +436,7 @@ const InputSchemaTab = ({
                                                 placeholder="thumb"
                                             />
                                             <button
+                                                type="button"
                                                 onClick={() => removeArrayItem('excludePatterns', index)}
                                                 className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                                             >
@@ -430,6 +445,7 @@ const InputSchemaTab = ({
                                         </div>
                                     ))}
                                     <button
+                                        type="button"
                                         onClick={() => addArrayItem('excludePatterns', '')}
                                         className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
                                     >
@@ -444,6 +460,7 @@ const InputSchemaTab = ({
                     {/* Additional Settings */}
                     <div className="bg-gray-50 rounded-lg p-4">
                         <button
+                            type="button"
                             onClick={() => toggleSection('settings')}
                             className="flex items-center justify-between w-full mb-4"
                         >
@@ -458,13 +475,16 @@ const InputSchemaTab = ({
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Category
                                         </label>
-                                        <input
-                                            type="text"
+                                        <select
                                             value={getSchemaValue('category', '')}
                                             onChange={(e) => handleSchemaChange('category', e.target.value)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            placeholder="Gạch ốp tường"
-                                        />
+                                        >
+                                            <option value="">Chọn category</option>
+                                            <option value="Product">Product</option>
+                                            <option value="News">News</option>
+                                            <option value="Video">Video</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">

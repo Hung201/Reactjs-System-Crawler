@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { actorsAPI, templatesAPI } from '../../services/api';
 import { CAMPAIGN_STATUS } from '../../utils/constants';
+import toast from 'react-hot-toast';
 
 const useCampaignForm = (campaign, isOpen) => {
     const { token } = useAuthStore();
@@ -73,15 +74,11 @@ const useCampaignForm = (campaign, isOpen) => {
         try {
             setLoadingActors(true);
             const response = await actorsAPI.getAll();
-
-            console.log('🔍 Actors API response:', response);
-
             if (response.data?.data && Array.isArray(response.data.data)) {
                 setActors(response.data.data);
             } else if (response.data && Array.isArray(response.data)) {
                 setActors(response.data);
             } else {
-                console.log('Using mock actors data - unexpected API format');
                 setActors([
                     { _id: '689464ac10595b979c15002a', name: 'Actor Craw by Class (Latest)' },
                     { _id: '689464ac10595b979c15002b', name: 'Multi-Website Product Crawler' },
@@ -113,9 +110,6 @@ const useCampaignForm = (campaign, isOpen) => {
         try {
             setLoadingTemplates(true);
             const response = await templatesAPI.getAll();
-
-            console.log('🔍 Templates API response:', response);
-
             if (response.data?.data && Array.isArray(response.data.data)) {
                 setTemplates(response.data.data);
             } else if (response.data && Array.isArray(response.data)) {
@@ -224,13 +218,70 @@ const useCampaignForm = (campaign, isOpen) => {
         setJsonInput(value);
         try {
             const parsed = JSON.parse(value);
+            // Convert simple JSON object back to schema format
+            const schemaProperties = {};
+            Object.entries(parsed).forEach(([key, value]) => {
+                schemaProperties[key] = {
+                    title: key.charAt(0).toUpperCase() + key.slice(1),
+                    type: typeof value === 'number' ? 'integer' : typeof value === 'boolean' ? 'boolean' : Array.isArray(value) ? 'array' : 'string',
+                    default: value
+                };
+            });
+
+            const newSchema = {
+                title: 'Multi-Website Product Crawler',
+                type: 'object',
+                schemaVersion: 1,
+                properties: schemaProperties
+            };
+
             setFormData(prev => ({
                 ...prev,
-                input_schema: parsed
+                input_schema: newSchema
             }));
         } catch (error) {
             // Invalid JSON, don't update formData
         }
+    };
+
+    // Chuyển đổi từ manual mode sang JSON mode - hiển thị dữ liệu input thực tế
+    const convertManualToJson = () => {
+        const inputData = {};
+        if (formData.input_schema?.properties) {
+            Object.entries(formData.input_schema.properties).forEach(([key, field]) => {
+                const value = field.default;
+                if (value !== undefined && value !== null) {
+                    if (field.type === 'array' && Array.isArray(value)) {
+                        if (value.length > 0) {
+                            inputData[key] = value;
+                        }
+                    } else if (field.type === 'boolean') {
+                        inputData[key] = value;
+                    } else if (field.type === 'integer') {
+                        if (typeof value === 'number' || (typeof value === 'string' && value !== '')) {
+                            inputData[key] = typeof value === 'string' ? parseInt(value) : value;
+                        }
+                    } else {
+                        if (value !== '') {
+                            inputData[key] = value;
+                        }
+                    }
+                }
+            });
+        }
+        const jsonString = JSON.stringify(inputData, null, 2);
+        setJsonInput(jsonString);
+    };
+
+    // Xử lý khi chuyển đổi input mode
+    const handleInputModeChange = (mode) => {
+        if (mode === 'json' && inputMode === 'manual') {
+            // Khi chuyển từ manual sang JSON, tự động chuyển đổi dữ liệu
+            convertManualToJson();
+            // Hiển thị thông báo
+            toast.success('Đã chuyển đổi dữ liệu từ Manual sang Input Data JSON');
+        }
+        setInputMode(mode);
     };
 
     const handleArrayChange = (field, index, value) => {
@@ -394,6 +445,7 @@ const useCampaignForm = (campaign, isOpen) => {
         handleTemplateChange,
         handleSchemaChange,
         handleJsonInputChange,
+        handleInputModeChange,
         handleArrayChange,
         addArrayItem,
         removeArrayItem,

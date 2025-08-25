@@ -27,7 +27,7 @@ const ForgotPassword = () => {
 
     const password = watch('newPassword');
 
-    // Timer countdown
+    // Timer countdown với cleanup tốt hơn
     useEffect(() => {
         let interval = null;
         if (currentStep === 2 && timeLeft > 0) {
@@ -42,7 +42,13 @@ const ForgotPassword = () => {
                 });
             }, 1000);
         }
-        return () => clearInterval(interval);
+
+        // Cleanup function để tránh memory leak
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
     }, [currentStep, timeLeft]);
 
     // Format time display
@@ -196,10 +202,10 @@ const ForgotPassword = () => {
                         return (
                             <div key={step.id} className="flex items-center">
                                 <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${isCompleted
-                                        ? 'bg-green-500 border-green-500 text-white'
-                                        : isActive
-                                            ? 'bg-blue-500 border-blue-500 text-white'
-                                            : 'bg-white border-gray-300 text-gray-400'
+                                    ? 'bg-green-500 border-green-500 text-white'
+                                    : isActive
+                                        ? 'bg-blue-500 border-blue-500 text-white'
+                                        : 'bg-white border-gray-300 text-gray-400'
                                     }`}>
                                     {isCompleted ? (
                                         <CheckCircle size={20} />

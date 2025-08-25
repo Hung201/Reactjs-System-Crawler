@@ -19,7 +19,10 @@ const CampaignsTable = ({
     setShowEditModal,
     setShowDeleteModal,
     setShowCreateModal,
-    navigate
+    navigate,
+    pagination,
+    currentPage,
+    onPageChange
 }) => {
     return (
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
@@ -148,6 +151,66 @@ const CampaignsTable = ({
                             </button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {pagination && pagination.pages > 1 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t">
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-700">
+                            Hiển thị {((pagination.page - 1) * pagination.limit) + 1} đến{' '}
+                            {Math.min(pagination.page * pagination.limit, pagination.total)} trong tổng số{' '}
+                            {pagination.total} chiến dịch
+                        </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Trước
+                        </button>
+
+                        {/* Page numbers */}
+                        <div className="flex items-center space-x-1">
+                            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                                let pageNum;
+                                if (pagination.pages <= 5) {
+                                    pageNum = i + 1;
+                                } else if (currentPage <= 3) {
+                                    pageNum = i + 1;
+                                } else if (currentPage >= pagination.pages - 2) {
+                                    pageNum = pagination.pages - 4 + i;
+                                } else {
+                                    pageNum = currentPage - 2 + i;
+                                }
+
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => onPageChange(pageNum)}
+                                        className={`px-3 py-1 text-sm border rounded-md ${currentPage === pageNum
+                                            ? 'bg-primary-600 text-white border-primary-600'
+                                            : 'hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => onPageChange(Math.min(pagination.pages, currentPage + 1))}
+                            disabled={currentPage === pagination.pages}
+                            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Sau
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

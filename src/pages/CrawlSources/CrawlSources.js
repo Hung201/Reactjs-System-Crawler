@@ -183,10 +183,6 @@ const CrawlSources = () => {
 
   const filteredSources = Array.isArray(sources?.data) ? sources.data : [];
 
-  console.log('CrawlSources - sources:', sources);
-  console.log('CrawlSources - sources.data:', sources?.data);
-  console.log('CrawlSources - filteredSources:', filteredSources);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -394,8 +390,6 @@ const CrawlSources = () => {
                         className="px-3 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
-                          console.log('Edit template clicked:', template);
-                          console.log('Template ID:', template.id || template._id);
                           setEditingTemplate(template);
                           setShowTemplateModal(true);
                         }}
@@ -449,7 +443,7 @@ const CrawlSources = () => {
               placeholder="Tìm kiếm nguồn..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="search-input"
             />
           </div>
 

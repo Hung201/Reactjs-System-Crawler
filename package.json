@@ -1,7 +1,7 @@
 {
   "name": "system-crawler-frontend",
   "version": "1.0.0",
-  "description": "Frontend cho hệ thống crawl dữ liệu giống Apify",
+  "description": "Frontend cho hệ thống quản trị Crawl nội bộ",
   "private": true,
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

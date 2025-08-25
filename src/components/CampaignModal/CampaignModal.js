@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useCampaignForm } from './useCampaignForm';
 import BasicInfoTab from './BasicInfoTab';
 import InputSchemaTab from './InputSchemaTab';
+import GuideTab from './GuideTab';
 
 const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
     const [activeTab, setActiveTab] = useState('basic');
@@ -25,6 +26,7 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
         handleTemplateChange,
         handleSchemaChange,
         handleJsonInputChange,
+        handleInputModeChange,
         handleArrayChange,
         addArrayItem,
         removeArrayItem,
@@ -132,8 +134,8 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
                     <h2 className="text-xl font-semibold text-gray-900">
@@ -147,7 +149,7 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
                     {/* Tab Navigation */}
                     <div className="flex border-b border-gray-200 flex-shrink-0">
                         <button
@@ -169,6 +171,16 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
                                 }`}
                         >
                             Input Schema
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('guide')}
+                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'guide'
+                                ? 'border-primary-500 text-primary-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Hướng dẫn
                         </button>
                     </div>
 
@@ -194,6 +206,7 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
                                 setInputMode={setInputMode}
                                 jsonInput={jsonInput}
                                 handleJsonInputChange={handleJsonInputChange}
+                                handleInputModeChange={handleInputModeChange}
                                 getSchemaValue={getSchemaValue}
                                 handleSchemaChange={handleSchemaChange}
                                 collapsedSections={collapsedSections}
@@ -204,6 +217,10 @@ const CampaignModal = ({ isOpen, onClose, onSubmit, campaign = null }) => {
                                 formData={formData}
                                 templates={templates}
                             />
+                        )}
+
+                        {activeTab === 'guide' && (
+                            <GuideTab />
                         )}
                     </div>
 

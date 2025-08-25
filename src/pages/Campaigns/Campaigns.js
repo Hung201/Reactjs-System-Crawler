@@ -4,7 +4,7 @@ import { CAMPAIGN_STATUS, CAMPAIGN_STATUS_LABELS } from '../../utils/constants';
 import CampaignModal from '../../components/CampaignModal/CampaignModal';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 import Toast from '../../components/Common/Toast';
-import { useToast } from '../../hooks/useToast';
+import useToast from '../../hooks/useToast';
 import { useAuthStore } from '../../stores/authStore';
 
 // Import new components
@@ -27,6 +27,10 @@ const Campaigns = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
     // Use custom hook for campaigns logic
     const {
         campaigns,
@@ -41,19 +45,26 @@ const Campaigns = () => {
         fetchCampaigns,
         calculateStats,
         isValidObjectId,
-        campaignService
+        campaignService,
+        pagination,
+        setPagination
     } = useCampaigns(token);
 
-    // Tìm kiếm campaigns
+    // Reset to page 1 when search, filter, or pageSize changes
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, pageSize]);
+
+    // Tìm kiếm campaigns với pagination
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
-            fetchCampaigns();
+            fetchCampaigns({ page: currentPage, limit: pageSize });
             return;
         }
 
         try {
             setLoading(true);
-            const result = await campaignService.searchCampaigns(searchTerm);
+            const result = await campaignService.searchCampaigns(searchTerm, { page: currentPage, limit: pageSize });
             if (result.success) {
                 setCampaigns(result.data);
             }
@@ -64,17 +75,17 @@ const Campaigns = () => {
         }
     };
 
-    // Lọc theo trạng thái
+    // Lọc theo trạng thái với pagination
     const handleStatusFilter = async (status) => {
         setStatusFilter(status);
         if (status === 'all') {
-            fetchCampaigns();
+            fetchCampaigns({ page: currentPage, limit: pageSize });
             return;
         }
 
         try {
             setLoading(true);
-            const result = await campaignService.filterCampaignsByStatus(status);
+            const result = await campaignService.filterCampaignsByStatus(status, { page: currentPage, limit: pageSize });
             if (result.success) {
                 setCampaigns(result.data);
             }
@@ -83,6 +94,28 @@ const Campaigns = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle pagination change
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+        fetchCampaigns({ page: newPage, limit: pageSize });
+    };
+
+    // Handle page size change
+    const handlePageSizeChange = (newPageSize) => {
+        setPageSize(newPageSize);
+        setCurrentPage(1);
+        fetchCampaigns({ page: 1, limit: newPageSize });
+    };
+
+    // Handle clear filter
+    const handleClearFilter = () => {
+        setSearchTerm('');
+        setStatusFilter('all');
+        setPageSize(10);
+        setCurrentPage(1);
+        fetchCampaigns({ page: 1, limit: 10 });
     };
 
     const filteredCampaigns = campaigns.filter(campaign => {
@@ -144,17 +177,6 @@ const Campaigns = () => {
 
                     if (verifyResult.success && verifyResult.data) {
                         const updatedCampaign = verifyResult.data;
-
-                        console.log('=== VERIFY UPDATE DEBUG ===');
-                        console.log('Original selectedCampaign:', selectedCampaign);
-                        console.log('CampaignData sent:', campaignData);
-                        console.log('Updated campaign from API:', updatedCampaign);
-                        console.log('URL comparison:', {
-                            original: selectedCampaign?.input?.url,
-                            sent: campaignData?.input?.url,
-                            received: updatedCampaign?.input?.url
-                        });
-                        console.log('=== END VERIFY DEBUG ===');
 
                         // Check if our changes were actually saved
                         const nameUpdated = updatedCampaign.name === campaignData.name;
@@ -295,14 +317,11 @@ const Campaigns = () => {
 
     const handleRunCampaign = async (campaignId) => {
         try {
-            console.log('🚀 Starting campaign:', campaignId);
-
             // Set loading state
             setRunningCampaigns(prev => new Set(prev).add(campaignId));
 
             // Step 1: Call run API
             const runResult = await campaignService.runCampaign(campaignId);
-            console.log('Run API response:', runResult);
 
             if (runResult.success) {
                 // Show success message
@@ -325,13 +344,11 @@ const Campaigns = () => {
                 const pollStatus = async () => {
                     try {
                         const statusResult = await campaignService.getCampaignStatus(campaignId);
-                        console.log('Status API response:', statusResult);
 
                         if (statusResult.success) {
                             const status = statusResult.data?.status;
 
                             if (status === 'completed') {
-                                console.log('✅ Campaign completed!');
                                 // Update campaign status to completed
                                 setCampaigns(prev => prev.map(c =>
                                     c.id === campaignId
@@ -345,7 +362,6 @@ const Campaigns = () => {
                                 ));
                                 return; // Stop polling
                             } else if (status === 'failed') {
-                                console.log('❌ Campaign failed!');
                                 setCampaigns(prev => prev.map(c =>
                                     c.id === campaignId
                                         ? { ...c, status: CAMPAIGN_STATUS.PAUSED }
@@ -453,6 +469,7 @@ const Campaigns = () => {
             <CampaignsStats
                 campaigns={campaigns}
                 stats={stats}
+                pagination={pagination}
             />
 
             {/* Filters */}
@@ -462,6 +479,9 @@ const Campaigns = () => {
                 statusFilter={statusFilter}
                 handleStatusFilter={handleStatusFilter}
                 handleSearch={handleSearch}
+                pageSize={pageSize}
+                handlePageSizeChange={handlePageSizeChange}
+                handleClearFilter={handleClearFilter}
             />
 
             {/* Campaigns Table */}
@@ -482,6 +502,9 @@ const Campaigns = () => {
                 setShowDeleteModal={setShowDeleteModal}
                 setShowCreateModal={setShowCreateModal}
                 navigate={navigate}
+                pagination={pagination}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
             />
 
             {/* Modals */}

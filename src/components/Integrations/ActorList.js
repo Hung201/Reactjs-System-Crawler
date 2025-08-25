@@ -71,9 +71,6 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
     // Load schedules from localStorage
     useEffect(() => {
         const savedSchedules = JSON.parse(localStorage.getItem('actorSchedules') || '[]');
-        console.log('Loading schedules from localStorage:', savedSchedules);
-        console.log('Number of schedules:', savedSchedules.length);
-
         // Khôi phục intervals cho các schedules đã có
         const restoredSchedules = savedSchedules.map(schedule => {
             // Tính thời gian còn lại đến lần chạy tiếp theo
@@ -83,8 +80,6 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
 
             // Nếu đã quá thời gian chạy tiếp theo, chạy ngay và tính thời gian mới
             if (timeUntilNextRun <= 0) {
-                // Chạy actor ngay lập tức
-                console.log('Running delayed actor:', schedule.actorName);
                 // Tìm actor trong danh sách để chạy
                 const actor = actors.find(a => a.id === schedule.actorId);
                 if (actor) {
@@ -97,9 +92,9 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
                 schedule.nextRun = newNextRun.toISOString();
             }
 
-            // Tạo interval mới
+            // Tạo interval mới với delay tối thiểu để tránh spam API
+            const minInterval = Math.max(schedule.interval * 60 * 1000, 60000); // Tối thiểu 1 phút
             const intervalId = setInterval(() => {
-                console.log('Running scheduled actor:', schedule.actorName);
                 const actor = actors.find(a => a.id === schedule.actorId);
                 if (actor) {
                     // Gọi API trực tiếp thay vì mở modal
@@ -107,7 +102,7 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
                 }
 
                 // Cập nhật thời gian chạy tiếp theo
-                const newNextRun = new Date(Date.now() + schedule.interval * 60 * 1000);
+                const newNextRun = new Date(Date.now() + minInterval);
                 schedule.nextRun = newNextRun.toISOString();
 
                 // Cập nhật localStorage
@@ -117,7 +112,7 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
                     updatedSchedules[scheduleIndex].nextRun = schedule.nextRun;
                     localStorage.setItem('actorSchedules', JSON.stringify(updatedSchedules));
                 }
-            }, schedule.interval * 60 * 1000);
+            }, minInterval);
 
             return {
                 ...schedule,
@@ -165,14 +160,14 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
 
     const handleConfirmSchedule = () => {
         if (selectedActor && scheduleTime > 0) {
-            // Tạo interval để chạy actor theo thời gian đã hẹn
+            // Tạo interval để chạy actor theo thời gian đã hẹn với delay tối thiểu
+            const minInterval = Math.max(scheduleTime * 60 * 1000, 60000); // Tối thiểu 1 phút
             const intervalId = setInterval(() => {
-                console.log('Running scheduled actor:', selectedActor.name);
                 // Gọi API trực tiếp thay vì mở modal
                 runActorDirectly(selectedActor);
 
                 // Cập nhật thời gian chạy tiếp theo
-                const newNextRun = new Date(Date.now() + scheduleTime * 60 * 1000);
+                const newNextRun = new Date(Date.now() + minInterval);
 
                 // Cập nhật state và localStorage
                 setSchedules(prevSchedules => {
@@ -193,7 +188,7 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
 
                     return updatedSchedules;
                 });
-            }, scheduleTime * 60 * 1000);
+            }, minInterval);
 
             // Lưu thông tin hẹn giờ vào localStorage (không lưu intervalId)
             const scheduleInfo = {
@@ -215,9 +210,6 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
             };
 
             setSchedules(prevSchedules => [...prevSchedules, newScheduleWithInterval]);
-
-            console.log('Created new schedule:', newScheduleWithInterval);
-            console.log('All schedules after adding:', [...schedules, newScheduleWithInterval]);
 
             // Hiển thị thông báo thành công
             toast.success(`Đã hẹn giờ chạy actor "${selectedActor.name}" mỗi ${scheduleTime} phút. Actor sẽ tự động chạy khi đến thời gian.`);
@@ -276,7 +268,6 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
             const apifyService = new ApifyService(platform.apiToken);
             const result = await apifyService.runActor(actor.id, {});
 
-            console.log('Actor run result:', result);
             toast.success(`Actor "${actor.name}" đã được chạy thành công!`);
 
         } catch (error) {
@@ -334,7 +325,7 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
                             placeholder="Tìm kiếm actors..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="search-input"
                         />
                     </div>
 

@@ -85,13 +85,10 @@ const DataTab = ({
                     </button>
                     <button
                         onClick={async () => {
-                            console.log('🔍 DEBUG: Testing status API directly...');
                             try {
                                 const result = await campaignService.getCampaignStatus(id);
-                                console.log('🔍 DEBUG: Direct API call result:', result);
                                 alert(`API Response: ${JSON.stringify(result, null, 2)}`);
                             } catch (error) {
-                                console.error('🔍 DEBUG: API error:', error);
                                 alert(`API Error: ${error.message}`);
                             }
                         }}
@@ -120,7 +117,6 @@ const DataTab = ({
                     <button
                         onClick={async () => {
                             try {
-                                console.log('🔍 Force refreshing campaign data...');
                                 const result = await campaignService.getCampaign(id);
                                 if (result.success) {
                                     // Also check for crawled data

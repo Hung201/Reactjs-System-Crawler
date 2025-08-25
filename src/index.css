@@ -36,6 +36,11 @@
   @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent;
 }
 
+/* Search input styles - override padding for search inputs */
+.search-input {
+  @apply w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
 /* Table styles */
 .table-header {
   @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;

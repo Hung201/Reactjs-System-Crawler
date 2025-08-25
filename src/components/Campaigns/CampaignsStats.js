@@ -7,7 +7,10 @@ import {
 } from 'lucide-react';
 import { CAMPAIGN_STATUS } from '../../utils/constants';
 
-const CampaignsStats = ({ campaigns, stats }) => {
+const CampaignsStats = ({ campaigns, stats, pagination }) => {
+    // Sử dụng pagination.total nếu có, nếu không thì fallback về campaigns.length
+    const totalCampaigns = pagination?.total || campaigns.length;
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -17,7 +20,7 @@ const CampaignsStats = ({ campaigns, stats }) => {
                     </div>
                     <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Tổng chiến dịch</p>
-                        <p className="text-2xl font-bold text-gray-900">{campaigns.length}</p>
+                        <p className="text-2xl font-bold text-gray-900">{totalCampaigns}</p>
                     </div>
                 </div>
             </div>
