@@ -26,7 +26,7 @@ const GuideTab = () => {
                                 <strong>Mở trang web:</strong> Mở trang web chi tiết sản phẩm bạn muốn lấy selector trong tab mới của trình duyệt
                             </li>
                             <li>
-                                <strong>Mở bookmark:</strong> Ấn tổ hợp phím ctrl + shift + o để mở bookmark rồi bấm vào "Dấu trang khác". Bấm vào 3 chấm bên phải của bookmarklet để mở menu rồi tạo dấu trang mới. Hiện ra đầu vào là "Tên" bạn điền tên tùy bạn và "URL" thì bạn dán code ở bước dưới vào.
+                                <strong>Mở bookmark:</strong> Ấn tổ hợp phím ctrl + shift + O để mở bookmark rồi bấm vào "Dấu trang khác". Bấm vào 3 chấm bên phải của bookmarklet để mở menu rồi tạo dấu trang mới. Hiện ra đầu vào là "Tên" bạn điền tên tùy bạn và "URL" thì bạn dán code ở bước dưới vào.
                             </li>
                             <li>
                                 <strong>Tạo bookmarklet:</strong> Kéo đoạn code sau vào thanh bookmark của trình duyệt:
@@ -38,6 +38,7 @@ const GuideTab = () => {
                                 <strong>Chọn element:</strong>
                                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                                     <li>Mở lại trang web chi tiết sản phẩm bạn muốn lấy selector</li>
+                                    <li>Nhấn tổ hợp phím ctrl + shift + B rồi chọn Bookmark vừa tạo</li>
                                     <li>Di chuyển chuột qua các element để highlight (viền đỏ)</li>
                                     <li>Click vào element bạn muốn lấy class path</li>
                                 </ul>

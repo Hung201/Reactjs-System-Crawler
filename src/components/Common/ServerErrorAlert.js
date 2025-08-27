@@ -42,10 +42,20 @@ const ServerErrorAlert = ({
                     return data?.message || `Lỗi server (${status})`;
             }
         } else if (error?.request) {
-            return "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.";
+            return "Không thể kết nối đến server. Vui lòng kiểm tra backend server có đang chạy không.";
+        } else if (error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')) {
+            return "Lỗi kết nối mạng. Backend server có thể chưa được khởi động.";
         } else {
             return error?.message || "Lỗi không xác định";
         }
+    };
+
+    const shouldShowTroubleshooting = () => {
+        return !navigator.onLine ||
+            error?.request ||
+            error?.code === 'ERR_NETWORK' ||
+            error?.message?.includes('Network Error') ||
+            error?.response?.status >= 500;
     };
 
     return (
@@ -61,6 +71,29 @@ const ServerErrorAlert = ({
                     <p className="text-sm text-red-700 mb-3">
                         {getErrorMessage()}
                     </p>
+
+                    {/* Troubleshooting Guide */}
+                    {shouldShowTroubleshooting() && (
+                        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <h4 className="text-xs font-medium text-blue-800 mb-2">Hướng dẫn khắc phục:</h4>
+                            <ul className="text-xs text-blue-700 space-y-1">
+                                {!navigator.onLine ? (
+                                    <>
+                                        <li>• Kiểm tra kết nối internet</li>
+                                        <li>• Thử kết nối lại WiFi</li>
+                                        <li>• Kiểm tra cài đặt mạng</li>
+                                    </>
+                                ) : (
+                                    <>
+                                        <li>• Kiểm tra backend server có đang chạy không</li>
+                                        <li>• Chạy lệnh: <code className="bg-blue-100 px-1 rounded">npm start</code> trong thư mục backend</li>
+                                        <li>• Kiểm tra port 5000 có đang được sử dụng không</li>
+                                        <li>• Kiểm tra file .env có cấu hình đúng REACT_APP_API_URL không</li>
+                                    </>
+                                )}
+                            </ul>
+                        </div>
+                    )}
 
                     {showRetry && (
                         <div className="flex items-center space-x-3">

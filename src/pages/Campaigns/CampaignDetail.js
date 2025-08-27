@@ -343,10 +343,22 @@ const CampaignDetail = () => {
                         clearInterval(interval);
                         setPollingInterval(null);
                         setIsRunning(false);
+
+                        // Xử lý lỗi polling chi tiết hơn
+                        let errorMessage = 'Lỗi khi kiểm tra trạng thái';
+
+                        if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+                            errorMessage = 'Mất kết nối server. Backend server có thể đã dừng.';
+                        } else if (error.response?.status === 404) {
+                            errorMessage = 'Campaign không tồn tại hoặc đã bị xóa.';
+                        } else if (error.response?.status === 500) {
+                            errorMessage = 'Lỗi server khi kiểm tra trạng thái.';
+                        }
+
                         setRunStatus(prev => ({
                             ...prev,
                             status: 'error',
-                            message: 'Lỗi khi kiểm tra trạng thái'
+                            message: errorMessage
                         }));
                     }
                 }, 5000); // Poll every 5 seconds (reduced frequency)
@@ -389,7 +401,10 @@ const CampaignDetail = () => {
                 }
             } else if (error.request) {
                 // Không nhận được response
-                errorMessage = 'Không thể kết nối đến server';
+                errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra backend server có đang chạy không.';
+            } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+                // Network error
+                errorMessage = 'Lỗi kết nối mạng. Backend server có thể chưa được khởi động.';
             } else {
                 // Lỗi khác
                 errorMessage = error.message || 'Lỗi không xác định';
