@@ -75,7 +75,6 @@ const AddUserModal = ({ isOpen, onClose }) => {
         }
     };
 
-    console.log('AddUserModal - isOpen:', isOpen);
     if (!isOpen) return null;
 
     const modalContent = (

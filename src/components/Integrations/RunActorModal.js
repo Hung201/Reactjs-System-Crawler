@@ -14,6 +14,18 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [inputSchema, setInputSchema] = useState(null);
 
+    // Store input data per actor to persist across modal opens/closes
+    const [actorInputData, setActorInputData] = useState(() => {
+        // Load from localStorage on component mount
+        try {
+            const saved = localStorage.getItem('actorInputData');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Error loading actor input data from localStorage:', error);
+            return {};
+        }
+    });
+
     // Load actor details when modal opens
     useEffect(() => {
         if (isOpen && actor?.id && platform?.apiToken) {
@@ -21,13 +33,47 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
         }
     }, [isOpen, actor, platform]);
 
-    // Reset form when modal closes
+    // Load saved input data for this actor when modal opens
     useEffect(() => {
-        if (!isOpen) {
-            // Don't reset input data when modal closes
-            // Keep the data for next time
+        if (isOpen && actor?.id) {
+            const savedData = actorInputData[actor.id];
+            if (savedData && Object.keys(savedData).length > 0) {
+                setInputData(savedData);
+                setJsonInput(JSON.stringify(savedData, null, 2));
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, actor?.id, actorInputData]);
+
+    // Save input data to localStorage whenever actorInputData changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('actorInputData', JSON.stringify(actorInputData));
+        } catch (error) {
+            console.error('Error saving actorInputData to localStorage:', error);
+        }
+    }, [actorInputData]);
+
+    // Save input data when modal closes
+    useEffect(() => {
+        if (!isOpen && actor?.id && Object.keys(inputData).length > 0) {
+            // Save current input data for this actor
+            setActorInputData(prev => ({
+                ...prev,
+                [actor.id]: inputData
+            }));
+        }
+    }, [isOpen, actor?.id, inputData]);
+
+    // Save input data whenever it changes (for real-time saving)
+    useEffect(() => {
+        if (isOpen && actor?.id && Object.keys(inputData).length > 0) {
+            // Save current input data for this actor
+            setActorInputData(prev => ({
+                ...prev,
+                [actor.id]: inputData
+            }));
+        }
+    }, [inputData, actor?.id, isOpen]);
 
     const loadActorDetails = async () => {
         if (!actor?.id || !platform?.apiToken) return;
@@ -63,8 +109,9 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
             setActorDetails(details);
             setInputSchema(inputSchema); // Cập nhật state inputSchema
 
-            // Initialize input data từ input schema hoặc example (chỉ khi chưa có dữ liệu)
-            if (Object.keys(inputData).length === 0) {
+            // Initialize input data từ input schema hoặc example (chỉ khi chưa có dữ liệu đã lưu)
+            const savedData = actorInputData[actor.id];
+            if (!savedData || Object.keys(savedData).length === 0) {
                 let initialInputData = {};
 
                 if (inputSchema && inputSchema.properties) {
@@ -94,9 +141,16 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
 
                 setInputData(initialInputData);
                 setJsonInput(JSON.stringify(initialInputData, null, 2));
+
+                // Save initial data for this actor
+                setActorInputData(prev => ({
+                    ...prev,
+                    [actor.id]: initialInputData
+                }));
             } else {
-                // Cập nhật JSON input để đồng bộ với input data hiện tại
-                setJsonInput(JSON.stringify(inputData, null, 2));
+                // Use saved data for this actor - don't override
+                setInputData(savedData);
+                setJsonInput(JSON.stringify(savedData, null, 2));
             }
         } catch (error) {
             console.error('Error loading actor details:', error);
@@ -155,13 +209,11 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
             const runId = result.data?.id || result.id;
             const runUrl = result.data?.webUrls?.runDetail || `https://console.apify.com/actors/${actor.id}/runs/${runId}`;
 
-            // Show success toast and close modal
+            // Show success toast but don't close modal
             toast.success(`Actor "${actor.name}" đã được khởi chạy thành công! Run ID: ${runId}`);
 
-            // Auto close modal after 1 second
-            setTimeout(() => {
-                onClose();
-            }, 1000);
+            // Don't auto close modal - keep it open with current data
+            // User can manually close or run again with same parameters
 
         } catch (error) {
             console.error('Run actor error:', error);
@@ -548,38 +600,81 @@ const RunActorModal = ({ isOpen, onClose, actor, platform }) => {
 
                     {/* Input Mode Toggle */}
                     <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={() => setInputMode('form')}
+                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'form'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    Form Input
+                                </button>
+                                <button
+                                    onClick={() => setInputMode('json')}
+                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'json'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    JSON Input
+                                </button>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                                💡 Dữ liệu được lưu cho từng actor
+                            </div>
+                        </div>
                         <div className="flex space-x-2">
                             <button
-                                onClick={() => setInputMode('form')}
-                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'form'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
+                                onClick={() => {
+                                    // Reset to default values from actor schema
+                                    if (actorDetails && inputSchema) {
+                                        let defaultInputData = {};
+                                        Object.entries(inputSchema.properties).forEach(([key, prop]) => {
+                                            if (prop.default !== undefined) {
+                                                defaultInputData[key] = prop.default;
+                                            } else if (prop.type === 'array') {
+                                                defaultInputData[key] = [];
+                                            } else if (prop.type === 'object') {
+                                                defaultInputData[key] = {};
+                                            } else if (prop.type === 'boolean') {
+                                                defaultInputData[key] = false;
+                                            } else if (prop.type === 'string') {
+                                                defaultInputData[key] = '';
+                                            } else if (prop.type === 'integer' || prop.type === 'number') {
+                                                defaultInputData[key] = 0;
+                                            }
+                                        });
+                                        setInputData(defaultInputData);
+                                        setJsonInput(JSON.stringify(defaultInputData, null, 2));
+                                        // Also save default data for this actor
+                                        if (actor?.id) {
+                                            setActorInputData(prev => ({
+                                                ...prev,
+                                                [actor.id]: defaultInputData
+                                            }));
+                                        }
+                                        toast.success('Đã reset về giá trị mặc định');
+                                    } else {
+                                        const emptyData = {};
+                                        setInputData(emptyData);
+                                        setJsonInput('{}');
+                                        // Also save empty data for this actor
+                                        if (actor?.id) {
+                                            setActorInputData(prev => ({
+                                                ...prev,
+                                                [actor.id]: emptyData
+                                            }));
+                                        }
+                                        toast.success('Đã reset form');
+                                    }
+                                }}
+                                className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                             >
-                                Form Input
-                            </button>
-                            <button
-                                onClick={() => setInputMode('json')}
-                                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'json'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
-                            >
-                                JSON Input
+                                Reset về mặc định
                             </button>
                         </div>
-                        <button
-                            onClick={() => {
-                                if (window.confirm('Bạn có chắc muốn xóa tất cả dữ liệu đã nhập?')) {
-                                    setInputData({});
-                                    setJsonInput('{}');
-                                    toast.success('Đã xóa dữ liệu input');
-                                }
-                            }}
-                            className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
-                        >
-                            Reset Form
-                        </button>
                     </div>
 
                     {/* Input Section */}

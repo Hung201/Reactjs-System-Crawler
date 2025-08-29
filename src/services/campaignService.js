@@ -4,8 +4,8 @@ import axios from 'axios';
 const campaignRateLimiter = {
     requests: new Map(),
     userRequests: new Map(), // Track requests per user
-    maxRequests: 50, // Tăng lên 50 requests/phút cho toàn bộ hệ thống
-    maxRequestsPerUser: 20, // 20 requests/phút cho mỗi user
+    maxRequests: 500, // Tăng lên 50 requests/phút cho toàn bộ hệ thống
+    maxRequestsPerUser: 100, // 20 requests/phút cho mỗi user
     timeWindow: 60000, // Trong 1 phút
 
     canMakeRequest: function (endpoint, userId = null) {

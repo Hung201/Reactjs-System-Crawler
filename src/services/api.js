@@ -5,8 +5,8 @@ import { useAuthStore } from '../stores/authStore';
 const rateLimiter = {
     requests: new Map(),
     userRequests: new Map(), // Track requests per user
-    maxRequests: 100, // Tăng lên 100 requests/phút cho toàn bộ hệ thống
-    maxRequestsPerUser: 30, // 30 requests/phút cho mỗi user
+    maxRequests: 1000, // Tăng lên 100 requests/phút cho toàn bộ hệ thống
+    maxRequestsPerUser: 100, // 30 requests/phút cho mỗi user
     timeWindow: 60000, // Trong 1 phút
 
     canMakeRequest: function (endpoint, userId = null) {

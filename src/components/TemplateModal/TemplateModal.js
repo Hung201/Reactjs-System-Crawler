@@ -1226,7 +1226,7 @@ const TemplateModal = ({ isOpen, onClose, template = null, onSuccess }) => {
         </div>
     ), [formData, isLoadingSchema, actorSchema, selectedActor, handleInputDataChange]);
 
-    console.log('TemplateModal render check - isOpen:', isOpen, 'template:', template);
+
     if (!isOpen) {
         console.log('TemplateModal not rendering - isOpen is false');
         return null;

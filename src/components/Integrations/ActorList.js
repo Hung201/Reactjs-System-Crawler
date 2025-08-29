@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Play, Search, Filter, Code, Calendar, BarChart3, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import ApifyService from '../../services/apifyService';
 import toast from 'react-hot-toast';
+import ScheduleManagementModal from './ScheduleManagementModal';
 
 const ActorList = ({ actors, loading, platform, onRunActor }) => {
     const navigate = useNavigate();
@@ -16,6 +17,13 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
     const [scheduleTime, setScheduleTime] = useState(60); // Mặc định 60 phút
     const [showSchedulesList, setShowSchedulesList] = useState(false);
     const [schedules, setSchedules] = useState([]);
+    const [showScheduleManagement, setShowScheduleManagement] = useState(false);
+    const [formData, setFormData] = useState({
+        actorId: '',
+        interval: 60,
+        startTime: new Date().toISOString().slice(0, 16),
+        isActive: true
+    });
 
     // Get unique categories
     const categories = ['all', ...new Set(actors.flatMap(actor => actor.categories || []))];
@@ -68,28 +76,65 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
         setCurrentPage(1);
     }, [searchTerm, selectedCategory, sortBy]);
 
+    // Calculate next run time based on start time and interval
+    const calculateNextRun = (startTime, interval) => {
+        const start = new Date(startTime);
+        const now = new Date();
+        const intervalMs = interval * 60 * 1000; // Convert minutes to milliseconds
+
+        // If start time is in the future, use it as next run
+        if (start > now) {
+            return start.toISOString();
+        }
+
+        // Calculate how many intervals have passed since start
+        const timeSinceStart = now.getTime() - start.getTime();
+        const intervalsPassed = Math.floor(timeSinceStart / intervalMs);
+
+        // Calculate next run time
+        const nextRun = new Date(start.getTime() + (intervalsPassed + 1) * intervalMs);
+        return nextRun.toISOString();
+    };
+
+    // Validate and fix schedule data
+    const validateSchedule = (schedule) => {
+        const now = new Date();
+        const nextRun = new Date(schedule.nextRun);
+
+        // If nextRun is in the past, recalculate it
+        if (nextRun <= now) {
+            const newNextRun = calculateNextRun(schedule.startTime, schedule.interval);
+            return { ...schedule, nextRun: newNextRun };
+        }
+
+        return schedule;
+    };
+
     // Load schedules from localStorage
     useEffect(() => {
         const savedSchedules = JSON.parse(localStorage.getItem('actorSchedules') || '[]');
         // Khôi phục intervals cho các schedules đã có
         const restoredSchedules = savedSchedules.map(schedule => {
+            // Validate and fix schedule data first
+            const validatedSchedule = validateSchedule(schedule);
+
             // Tính thời gian còn lại đến lần chạy tiếp theo
             const now = new Date();
-            const nextRunTime = new Date(schedule.nextRun);
+            const nextRunTime = new Date(validatedSchedule.nextRun);
             const timeUntilNextRun = nextRunTime.getTime() - now.getTime();
 
             // Nếu đã quá thời gian chạy tiếp theo, chạy ngay và tính thời gian mới
             if (timeUntilNextRun <= 0) {
                 // Tìm actor trong danh sách để chạy
-                const actor = actors.find(a => a.id === schedule.actorId);
+                const actor = actors.find(a => a.id === validatedSchedule.actorId);
                 if (actor) {
                     // Gọi API trực tiếp thay vì mở modal
                     runActorDirectly(actor);
                 }
 
-                // Tính thời gian chạy tiếp theo mới
-                const newNextRun = new Date(now.getTime() + schedule.interval * 60 * 1000);
-                schedule.nextRun = newNextRun.toISOString();
+                // Tính thời gian chạy tiếp theo mới dựa trên start time và interval
+                const newNextRun = calculateNextRun(validatedSchedule.startTime, validatedSchedule.interval);
+                validatedSchedule.nextRun = newNextRun;
             }
 
             // Tạo interval mới với delay tối thiểu để tránh spam API
@@ -115,7 +160,7 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
             }, minInterval);
 
             return {
-                ...schedule,
+                ...validatedSchedule,
                 intervalId: intervalId
             };
         });
@@ -131,6 +176,54 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
             nextRun: s.nextRun
         }))));
 
+    }, [actors, platform]);
+
+    // Auto-update schedules every minute to refresh status and run actors when time comes
+    useEffect(() => {
+        const updateTimer = setInterval(() => {
+            setSchedules(prevSchedules => {
+                const updatedSchedules = prevSchedules.map(schedule => {
+                    if (schedule.isActive) {
+                        const now = new Date();
+                        const nextRun = new Date(schedule.nextRun);
+
+                        // Check if it's time to run the actor
+                        if (nextRun <= now) {
+                            // Find and run the actor
+                            const actor = actors.find(a => a.id === schedule.actorId);
+                            if (actor) {
+                                runActorDirectly(actor);
+                            }
+
+                            // Calculate next run time
+                            const newNextRun = calculateNextRun(schedule.startTime, schedule.interval);
+                            return { ...schedule, nextRun: newNextRun };
+                        }
+                    }
+                    return schedule;
+                });
+
+                // Update localStorage if any changes
+                const hasChanges = updatedSchedules.some((schedule, index) =>
+                    schedule.nextRun !== prevSchedules[index]?.nextRun
+                );
+
+                if (hasChanges) {
+                    localStorage.setItem('actorSchedules', JSON.stringify(updatedSchedules.map(s => ({
+                        actorId: s.actorId,
+                        actorName: s.actorName,
+                        interval: s.interval,
+                        startTime: s.startTime,
+                        nextRun: s.nextRun,
+                        isActive: s.isActive
+                    }))));
+                }
+
+                return updatedSchedules;
+            });
+        }, 30000); // Check every 30 seconds
+
+        return () => clearInterval(updateTimer);
     }, [actors, platform]);
 
     // Cleanup intervals when component unmounts
@@ -154,8 +247,14 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
     };
 
     const handleScheduleActor = (actor) => {
-        setSelectedActor(actor);
-        setShowScheduleModal(true);
+        setShowScheduleManagement(true);
+        // Pre-fill form with selected actor
+        setFormData({
+            actorId: actor.id,
+            interval: 60,
+            startTime: new Date().toISOString().slice(0, 16),
+            isActive: true
+        });
     };
 
     const handleConfirmSchedule = () => {
@@ -254,19 +353,153 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
         setShowSchedulesList(false);
     };
 
+    // Handle schedule management
+    const handleAddSchedule = (scheduleData) => {
+        const actor = actors.find(a => a.id === scheduleData.actorId);
+        if (!actor) {
+            toast.error('Không tìm thấy actor');
+            return;
+        }
+
+        const newSchedule = {
+            id: Date.now().toString(),
+            actorId: scheduleData.actorId,
+            actorName: actor.name,
+            interval: scheduleData.interval,
+            startTime: scheduleData.startTime,
+            nextRun: scheduleData.nextRun || new Date(scheduleData.startTime).toISOString(),
+            isActive: scheduleData.isActive,
+            createdAt: new Date().toISOString()
+        };
+
+        // Create interval for the new schedule if it's active
+        if (scheduleData.isActive) {
+            const intervalMs = scheduleData.interval * 60 * 1000;
+            const intervalId = setInterval(() => {
+                const now = new Date();
+                const nextRun = new Date(newSchedule.nextRun);
+
+                if (nextRun <= now) {
+                    runActorDirectly(actor);
+
+                    // Update next run time
+                    const newNextRun = calculateNextRun(newSchedule.startTime, newSchedule.interval);
+                    newSchedule.nextRun = newNextRun;
+
+                    // Update localStorage
+                    const currentSchedules = JSON.parse(localStorage.getItem('actorSchedules') || '[]');
+                    const scheduleIndex = currentSchedules.findIndex(s => s.actorId === newSchedule.actorId);
+                    if (scheduleIndex !== -1) {
+                        currentSchedules[scheduleIndex].nextRun = newNextRun;
+                        localStorage.setItem('actorSchedules', JSON.stringify(currentSchedules));
+                    }
+                }
+            }, Math.min(intervalMs, 30000)); // Check every 30 seconds or interval, whichever is smaller
+
+            newSchedule.intervalId = intervalId;
+        }
+
+        setSchedules(prev => [...prev, newSchedule]);
+
+        // Save to localStorage
+        const updatedSchedules = [...schedules, newSchedule];
+        localStorage.setItem('actorSchedules', JSON.stringify(updatedSchedules.map(s => ({
+            actorId: s.actorId,
+            actorName: s.actorName,
+            interval: s.interval,
+            startTime: s.startTime,
+            nextRun: s.nextRun,
+            isActive: s.isActive
+        }))));
+
+        toast.success(`Đã tạo lịch hẹn giờ cho ${actor.name}`);
+    };
+
+    const handleEditSchedule = (scheduleId, scheduleData) => {
+        const actor = actors.find(a => a.id === scheduleData.actorId);
+        if (!actor) {
+            toast.error('Không tìm thấy actor');
+            return;
+        }
+
+        setSchedules(prev => prev.map(schedule =>
+            schedule.id === scheduleId
+                ? {
+                    ...schedule,
+                    actorId: scheduleData.actorId,
+                    actorName: actor.name,
+                    interval: scheduleData.interval,
+                    startTime: scheduleData.startTime,
+                    nextRun: scheduleData.nextRun || new Date(scheduleData.startTime).toISOString(),
+                    isActive: scheduleData.isActive,
+                    updatedAt: new Date().toISOString()
+                }
+                : schedule
+        ));
+
+        // Update localStorage
+        const updatedSchedules = schedules.map(schedule =>
+            schedule.id === scheduleId
+                ? {
+                    ...schedule,
+                    actorId: scheduleData.actorId,
+                    actorName: actor.name,
+                    interval: scheduleData.interval,
+                    startTime: scheduleData.startTime,
+                    nextRun: scheduleData.nextRun || new Date(scheduleData.startTime).toISOString(),
+                    isActive: scheduleData.isActive
+                }
+                : schedule
+        );
+        localStorage.setItem('actorSchedules', JSON.stringify(updatedSchedules.map(s => ({
+            actorId: s.actorId,
+            actorName: s.actorName,
+            interval: s.interval,
+            startTime: s.startTime,
+            nextRun: s.nextRun,
+            isActive: s.isActive
+        }))));
+
+        toast.success(`Đã cập nhật lịch hẹn giờ cho ${actor.name}`);
+    };
+
+    const handleUpdateSchedules = (updatedSchedules) => {
+        setSchedules(updatedSchedules);
+
+        // Update localStorage
+        localStorage.setItem('actorSchedules', JSON.stringify(updatedSchedules.map(s => ({
+            actorId: s.actorId,
+            actorName: s.actorName,
+            interval: s.interval,
+            startTime: s.startTime,
+            nextRun: s.nextRun,
+            isActive: s.isActive
+        }))));
+    };
+
     // Hàm gọi API trực tiếp thay vì mở modal
     const runActorDirectly = async (actor) => {
         try {
-            console.log('Running actor directly:', actor.name);
-
             if (!platform?.apiToken) {
-                console.error('No API token available');
                 toast.error('Không có API token để chạy actor');
                 return;
             }
 
+            // Get saved input data for this actor
+            let inputData = {};
+            try {
+                const savedActorInputData = localStorage.getItem('actorInputData');
+                if (savedActorInputData) {
+                    const allActorData = JSON.parse(savedActorInputData);
+                    inputData = allActorData[actor.id] || {};
+                }
+            } catch (error) {
+                console.error('Error loading saved input data:', error);
+            }
+
             const apifyService = new ApifyService(platform.apiToken);
-            const result = await apifyService.runActor(actor.id, {});
+
+            const result = await apifyService.runActor(actor.id, inputData);
 
             toast.success(`Actor "${actor.name}" đã được chạy thành công!`);
 
@@ -306,11 +539,16 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
                     </div>
                     <div className="flex items-center space-x-2">
                         <button
-                            onClick={handleShowSchedulesList}
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            onClick={() => setShowScheduleManagement(true)}
+                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
                         >
-                            <Clock className="h-4 w-4 mr-1" />
-                            Quản lý hẹn giờ ({schedules.length})
+                            <Clock className="h-4 w-4 mr-2" />
+                            Quản lý hẹn giờ
+                            {schedules.length > 0 && (
+                                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                                    {schedules.length}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -526,141 +764,21 @@ const ActorList = ({ actors, loading, platform, onRunActor }) => {
                 </div>
             )}
 
-            {/* Modal Danh sách hẹn giờ */}
-            {showSchedulesList && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-medium text-gray-900">
-                                    Quản lý hẹn giờ ({schedules.length})
-                                </h3>
-                                <button
-                                    onClick={handleCloseSchedulesList}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
 
-                            {schedules.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                    <p className="text-gray-500">Chưa có lịch hẹn giờ nào</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3 max-h-96 overflow-y-auto">
-                                    {schedules.map((schedule, index) => (
-                                        <div key={index} className="border border-gray-200 rounded-lg p-4">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                    <h4 className="font-medium text-gray-900">
-                                                        {schedule.actorName}
-                                                    </h4>
-                                                    <p className="text-sm text-gray-500 mt-1">
-                                                        Chạy mỗi {schedule.interval} phút
-                                                    </p>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        Bắt đầu: {new Date(schedule.startTime).toLocaleString('vi-VN')}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400">
-                                                        Lần chạy tiếp theo: {new Date(schedule.nextRun).toLocaleString('vi-VN')}
-                                                    </p>
-                                                    <p className="text-xs text-blue-500">
-                                                        Còn lại: {Math.max(0, Math.floor((new Date(schedule.nextRun).getTime() - new Date().getTime()) / 1000 / 60))} phút
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleCancelScheduledActor(index)}
-                                                    className="ml-4 px-3 py-1 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                                >
-                                                    Hủy
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
 
-                            <div className="mt-6 flex justify-end">
-                                <button
-                                    onClick={handleCloseSchedulesList}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                >
-                                    Đóng
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Hẹn giờ */}
-            {showScheduleModal && selectedActor && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-medium text-gray-900">
-                                    Hẹn giờ chạy Actor
-                                </h3>
-                                <button
-                                    onClick={handleCancelSchedule}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <div className="mb-4">
-                                <p className="text-sm text-gray-600 mb-2">
-                                    Actor: <span className="font-medium text-gray-900">{selectedActor.name}</span>
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                    Mô tả: <span className="font-medium text-gray-900">{selectedActor.description}</span>
-                                </p>
-                            </div>
-
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Thời gian chạy (phút)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="1440"
-                                    value={scheduleTime}
-                                    onChange={(e) => setScheduleTime(parseInt(e.target.value) || 60)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Nhập số phút"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Nhập số phút (1-1440). Actor sẽ chạy tự động mỗi {scheduleTime} phút.
-                                </p>
-                            </div>
-
-                            <div className="flex space-x-3">
-                                <button
-                                    onClick={handleCancelSchedule}
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleConfirmSchedule}
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                    Xác nhận
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Schedule Management Modal */}
+            <ScheduleManagementModal
+                isOpen={showScheduleManagement}
+                onClose={() => setShowScheduleManagement(false)}
+                schedules={schedules}
+                onCancelSchedule={handleCancelScheduledActor}
+                onEditSchedule={handleEditSchedule}
+                onAddSchedule={handleAddSchedule}
+                onUpdateSchedules={handleUpdateSchedules}
+                actors={actors}
+                initialFormData={formData.actorId ? formData : null}
+                onRunActor={runActorDirectly}
+            />
         </div>
     );
 };

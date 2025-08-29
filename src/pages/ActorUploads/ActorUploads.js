@@ -91,7 +91,6 @@ const ActorUploads = () => {
 
   const confirmDelete = () => {
     if (actorToDelete && !deleteMutation.isLoading) {
-      console.log('Deleting actor:', actorToDelete._id);
       deleteMutation.mutate(actorToDelete._id);
     }
   };

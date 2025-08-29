@@ -1,21 +1,21 @@
 // Element Selector Script - Inject vào tab mới
 (function () {
-    let isSelectionMode = false;
-    let highlightElement = null;
-    let originalStyles = {};
+  let isSelectionMode = false;
+  let highlightElement = null;
+  let originalStyles = {};
 
-    // Lắng nghe message từ tab gốc
-    window.addEventListener('message', function (event) {
-        if (event.data.type === 'START_ELEMENT_SELECTION') {
-            startElementSelection();
-        }
-    });
+  // Lắng nghe message từ tab gốc
+  window.addEventListener('message', function (event) {
+    if (event.data.type === 'START_ELEMENT_SELECTION') {
+      startElementSelection();
+    }
+  });
 
-    // Thêm script vào head nếu chưa có
-    if (!document.getElementById('element-selector-script')) {
-        const script = document.createElement('script');
-        script.id = 'element-selector-script';
-        script.textContent = `
+  // Thêm script vào head nếu chưa có
+  if (!document.getElementById('element-selector-script')) {
+    const script = document.createElement('script');
+    script.id = 'element-selector-script';
+    script.textContent = `
       // Element Selector Functions
       window.elementSelector = {
         startSelection: function() {
@@ -197,23 +197,20 @@
         }
       };
     `;
-        document.head.appendChild(script);
-    }
+    document.head.appendChild(script);
+  }
 
-    function startElementSelection() {
-        // Sử dụng window.elementSelector nếu có
+  function startElementSelection() {
+    // Sử dụng window.elementSelector nếu có
+    if (window.elementSelector) {
+      window.elementSelector.startSelection();
+    } else {
+      // Fallback cho trường hợp script chưa load xong
+      setTimeout(() => {
         if (window.elementSelector) {
-            window.elementSelector.startSelection();
-        } else {
-            // Fallback cho trường hợp script chưa load xong
-            setTimeout(() => {
-                if (window.elementSelector) {
-                    window.elementSelector.startSelection();
-                }
-            }, 100);
+          window.elementSelector.startSelection();
         }
+      }, 100);
     }
-
-    // Thông báo script đã load
-    console.log('Element Selector Script loaded');
+  }
 })();
